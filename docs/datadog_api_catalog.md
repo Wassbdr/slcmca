@@ -19,15 +19,23 @@ First contact with the real org. Run `slacheck doctor` then `slacheck record` to
 |---|---|---|
 | `GET /api/v1/validate` (`slacheck doctor`) | ✅ valid | API key + site OK |
 | **Site** | `datadoghq.com` (**US**, not EU) | `.env` must use `DD_SITE=datadoghq.com` |
-| APM `/api/v1/service_dependencies` | ❌ **401** | app key lacks `apm_read` |
-| Software Catalog relations (fallback) | ✅ reachable but **0 relations** | no declared `dependsOn` in this org → topology must come from APM, not the catalog |
-| Metrics timeseries (`query_metrics`) | ❌ **403** | app key lacks `metrics_read` / timeseries_query |
+| APM `/api/v1/service_dependencies` | ✅ **200, but empty** (`{}`) for env prod/production/staging/dev/default | `apm_read` GRANTED and working; **no APM trace data visible** |
+| APM `/api/v2/services/definitions` | ✅ **0 services** | confirms no traced services in this key's view |
+| Software Catalog relations | ✅ reachable but **0 relations** | no declared `dependsOn` either |
+| Metrics timeseries (`query_metrics`, `list_active_metrics`) | ❌ **403** | app key lacks `metrics_read` |
 | SLOs (`list_slos`) | ❌ **403** | app key lacks `slos_read` |
 
-**Conclusion:** credentials are *valid* but the **application key is under-scoped** — it currently
-grants almost nothing. The blocker for Phase 3 is **permissions on the app key**, not the keys
-themselves. Ask the supervisor to add the scopes in the checklist below (esp. `apm_read` +
-`metrics_read`), then re-run `slacheck record`.
+**Conclusion (revised):** the keys are valid and **`apm_read` is now working**. Two remaining blockers:
+1. **No APM data** — the service map and service definitions are *empty* for every env tried. Either
+   train-ticket is not emitting APM traces to this org, or it is traced under an account/env this key
+   cannot see. This is the **primary** blocker: with no topology there is nothing to build a graph from.
+2. **Missing `metrics_read` + `slos_read`** scopes on the app key (still 403). Needed for the SLO values
+   even once topology exists.
+
+> Gotcha discovered: the SDK's low-level `call_api` does **not** auto-attach Datadog auth — auth is
+> applied inside the *generated* API methods. Raw calls must pass `DD-API-KEY` / `DD-APPLICATION-KEY`
+> headers explicitly (fixed in `live_client._service_dependencies_apm`). The earlier "401 on APM" was
+> this bug, not a missing scope.
 
 **SDK reality:** `datadog-api-client` 2.56 does **not** ship a `service_dependencies_api`. slacheck
 calls the runtime topology endpoint via the SDK's low-level `ApiClient.call_api(...)`, with Software

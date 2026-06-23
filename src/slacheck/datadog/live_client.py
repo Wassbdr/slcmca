@@ -69,12 +69,18 @@ class LiveClient:
     def _service_dependencies_apm(self) -> dict:
         from datadog_api_client import ApiClient
 
+        # call_api does NOT auto-attach auth (the SDK applies it inside generated API
+        # methods, not here), so we set the Datadog auth headers explicitly.
         with ApiClient(self._config) as client:
             raw: Any = client.call_api(
                 resource_path="/api/v1/service_dependencies",
                 method="GET",
                 query_params=[("env", self._settings.env)],
-                header_params={"Accept": "application/json"},
+                header_params={
+                    "Accept": "application/json",
+                    "DD-API-KEY": self._settings.api_key,
+                    "DD-APPLICATION-KEY": self._settings.app_key,
+                },
                 response_type=(dict,),
                 return_http_data_only=True,
             )
