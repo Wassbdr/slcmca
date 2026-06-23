@@ -44,8 +44,9 @@ pip install -e ".[dev,datadog]"    # + live Datadog integration
 pytest                             # offline tests (live tests skipped by default)
 pytest -m live                     # live smoke tests (needs DD_API_KEY)
 ruff check . && mypy               # lint + types
+slacheck doctor                    # validate .env creds + site against Datadog (no key printed)
 slacheck analyze --source fixture --entrypoint ts-gateway-service --constraint availability
-slacheck record                    # capture real API responses → fixtures/ (needs keys)
+slacheck record                    # capture real API responses → fixtures/ (resilient; needs scopes)
 slacheck publish --source live ... # push dashboard (needs dashboards_write)
 ```
 
@@ -75,5 +76,7 @@ the required scopes are in `docs/datadog_api_catalog.md` ("Access checklist").
 
 - Phase 0 (catalog + scaffold), Phase 1 (envelope engine), Phase 2 (graph + critical path on
   fixtures), Phase 4 (dashboard builder) are buildable/testable **offline**.
-- Phase 3 (live integration) is **blocked on Datadog keys** — see the access checklist. Once keys
-  arrive: `slacheck record` to seed real fixtures, then validate parsing against real shapes.
+- Phase 3 (live integration) is **wired and keys are valid** (`slacheck doctor` passes, site is
+  `datadoghq.com`/US) but **blocked on app-key scopes** — APM=401, metrics/SLOs=403. See
+  `docs/datadog_api_catalog.md` → "Live findings". Once scopes are granted: `slacheck record`
+  seeds real fixtures, then validate parsing against real shapes.

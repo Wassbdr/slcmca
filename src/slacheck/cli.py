@@ -134,19 +134,75 @@ def publish(
 def record(
     out: Path = typer.Option(_REPO_ROOT / "fixtures" / "datadog", help="Output fixtures dir."),
 ) -> None:
-    """Capture live Datadog responses into fixtures/datadog/ (needs keys)."""
+    """Capture live Datadog responses into fixtures/. Resilient: records what it can,
+    reports which endpoints are denied (so you know exactly which scopes to request)."""
     src = get_source("live")
     out.mkdir(parents=True, exist_ok=True)
     captures = {
-        "service_dependencies.json": src.service_dependencies(),
-        "metrics_latency_p99.json": src.metric_series("latency_p99"),
-        "metrics_error_rate.json": src.metric_series("error_count"),
-        "metrics_request_rate.json": src.metric_series("request_count"),
-        "slo_list.json": src.list_slos(),
+        "service_dependencies.json": lambda: src.service_dependencies(),
+        "metrics_latency_p99.json": lambda: src.metric_series("latency_p99"),
+        "metrics_error_rate.json": lambda: src.metric_series("error_count"),
+        "metrics_request_rate.json": lambda: src.metric_series("request_count"),
+        "slo_list.json": lambda: src.list_slos(),
     }
-    for name, payload in captures.items():
+    ok, failed = 0, 0
+    for name, fetch in captures.items():
+        try:
+            payload = fetch()
+        except Exception as exc:  # noqa: BLE001 — record-what-you-can, report the rest
+            failed += 1
+            reason = str(exc).splitlines()[0]
+            typer.secho(f"SKIP {name}: {type(exc).__name__}: {reason}", fg=typer.colors.YELLOW)
+            continue
         (out / name).write_text(json.dumps(payload, indent=2))
-        typer.echo(f"wrote {out / name}")
+        ok += 1
+        typer.secho(f"wrote {out / name}", fg=typer.colors.GREEN)
+
+    typer.echo(f"\nCaptured {ok}/{ok + failed} endpoints.")
+    if failed:
+        typer.secho(
+            "Some endpoints were denied — grant the app key the scopes in "
+            "docs/datadog_api_catalog.md ('Access checklist') and re-run.",
+            fg=typer.colors.YELLOW,
+        )
+
+
+@app.command()
+def doctor() -> None:
+    """Check that .env credentials + site are accepted by Datadog (no key is printed)."""
+    settings = Settings()
+    api_state = "set" if settings.api_key else "MISSING"
+    app_state = "set" if settings.app_key else "MISSING"
+    typer.echo(
+        f"site={settings.site}  env={settings.env}  "
+        f"api_key={api_state}  app_key={app_state}"
+    )
+
+    if not settings.has_credentials:
+        typer.secho(
+            "Missing DD_API_KEY and/or DD_APP_KEY in .env. "
+            "Read endpoints (topology, metrics, dashboards) require BOTH keys.",
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(code=1)
+
+    from slacheck.datadog.live_client import LiveClient
+
+    try:
+        ok = LiveClient(settings).validate()
+    except Exception as exc:  # noqa: BLE001 — surface the API error to the user
+        typer.secho(f"Validation call failed: {exc}", fg=typer.colors.RED)
+        typer.secho(
+            "If this is a 403, confirm DD_SITE (EU vs US) and the app key scopes.",
+            fg=typer.colors.YELLOW,
+        )
+        raise typer.Exit(code=1) from exc
+
+    if ok:
+        typer.secho("Credentials valid for this site. ✅", fg=typer.colors.GREEN)
+    else:
+        typer.secho("API key rejected for this site — check DD_SITE.", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
 
 
 @app.command()

@@ -20,23 +20,30 @@ def _api_client(settings: Settings):
 
 
 def publish(dashboard: dict, settings: Settings) -> str:
-    """Create or update the dashboard. Returns its public URL."""
+    """Create or update the dashboard. Returns its public URL.
+
+    ``dashboard`` is the plain dict from dashboard.builder; the SDK requires a typed
+    ``Dashboard`` model, so we deserialize the dict through the client.
+    """
+    import json
+
     from datadog_api_client.v1.api.dashboards_api import DashboardsApi
+    from datadog_api_client.v1.model.dashboard import Dashboard
 
     with _api_client(settings) as client:
         api = DashboardsApi(client)
+        body: Dashboard = client.deserialize(json.dumps(dashboard), (Dashboard,), True)
 
         existing_id = None
-        listed = api.list_dashboards()
-        for d in listed.get("dashboards", []) or []:
-            if d.get("title") == dashboard["title"]:
-                existing_id = d.get("id")
+        for d in getattr(api.list_dashboards(), "dashboards", []) or []:
+            if getattr(d, "title", None) == dashboard["title"]:
+                existing_id = getattr(d, "id", None)
                 break
 
         if existing_id:
-            resp = api.update_dashboard(dashboard_id=existing_id, body=dashboard)
+            resp = api.update_dashboard(dashboard_id=existing_id, body=body)
         else:
-            resp = api.create_dashboard(body=dashboard)
+            resp = api.create_dashboard(body=body)
 
-    dash_id = resp.get("id") if isinstance(resp, dict) else getattr(resp, "id", existing_id)
+    dash_id = getattr(resp, "id", existing_id)
     return f"https://{settings.site}/dashboard/{dash_id}"

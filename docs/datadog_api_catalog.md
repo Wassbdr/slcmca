@@ -6,9 +6,32 @@ Datadog API"* so we can build a topology graph, extract a critical path, and pub
 Cluster: `observit-cluster1`. App: `train-ticket` (services `ts-*`, entrypoint `ts-gateway-service`).
 SDK: [`datadog-api-client`](https://github.com/DataDog/datadog-api-client-python) v2.
 
-> This document is written from the published API/SDK shapes. It does **not** require live access —
-> it is the map we follow once keys arrive. Run `slacheck record` to capture the real responses into
-> `fixtures/datadog/` and validate the shapes below.
+> This document is written from the published API/SDK shapes. Run `slacheck record` to capture the
+> real responses into `fixtures/datadog/` and validate the shapes below.
+
+---
+
+## Live findings (probed 2026-06-23 against `observit-cluster1`)
+
+First contact with the real org. Run `slacheck doctor` then `slacheck record` to reproduce.
+
+| Check | Result | Implication |
+|---|---|---|
+| `GET /api/v1/validate` (`slacheck doctor`) | ✅ valid | API key + site OK |
+| **Site** | `datadoghq.com` (**US**, not EU) | `.env` must use `DD_SITE=datadoghq.com` |
+| APM `/api/v1/service_dependencies` | ❌ **401** | app key lacks `apm_read` |
+| Software Catalog relations (fallback) | ✅ reachable but **0 relations** | no declared `dependsOn` in this org → topology must come from APM, not the catalog |
+| Metrics timeseries (`query_metrics`) | ❌ **403** | app key lacks `metrics_read` / timeseries_query |
+| SLOs (`list_slos`) | ❌ **403** | app key lacks `slos_read` |
+
+**Conclusion:** credentials are *valid* but the **application key is under-scoped** — it currently
+grants almost nothing. The blocker for Phase 3 is **permissions on the app key**, not the keys
+themselves. Ask the supervisor to add the scopes in the checklist below (esp. `apm_read` +
+`metrics_read`), then re-run `slacheck record`.
+
+**SDK reality:** `datadog-api-client` 2.56 does **not** ship a `service_dependencies_api`. slacheck
+calls the runtime topology endpoint via the SDK's low-level `ApiClient.call_api(...)`, with Software
+Catalog `dependsOn` relations as a fallback (see `src/slacheck/datadog/live_client.py`).
 
 ---
 
@@ -18,7 +41,7 @@ SDK: [`datadog-api-client`](https://github.com/DataDog/datadog-api-client-python
 |---|---|
 | `DD_API_KEY` | org-level API key, every request |
 | `DD_APP_KEY` | per-user application key — **carries the permission scopes** |
-| `DD_SITE` | org domain: `datadoghq.eu` / `datadoghq.com` / `us3.` / `us5.` / `ap1.` — **confirm** (wrong site = silent 403/404) |
+| `DD_SITE` | **confirmed `datadoghq.com` (US)** for this org (was assumed EU) |
 | `DD_ENV` | APM env tag of train-ticket (`prod`/`production`/`staging`) — required param of the deps endpoint |
 | scope `apm_read` | service map / service dependencies |
 | scope `apm_service_catalog_read` | software catalog (declared dependencies) |
@@ -35,8 +58,10 @@ SDK: [`datadog-api-client`](https://github.com/DataDog/datadog-api-client-python
 The graph nodes + edges come from APM. This is the input that replaces the paper's hand-written YAML.
 
 ### 1a. Service Dependencies (primary)
-- **Endpoint:** `GET /api/v1/service_dependencies?env=<env>&start=<epoch>`
-- **SDK:** `datadog_api_client.v1.api.service_dependencies_api.ServiceDependenciesApi.list_service_dependencies(env=...)`
+- **Endpoint:** `GET /api/v1/service_dependencies?env=<env>` (APM Service Map adjacency)
+- **SDK:** ⚠️ no codegen'd class in `datadog-api-client` 2.x. Called via low-level
+  `ApiClient.call_api("/api/v1/service_dependencies", "GET", query_params=[("env", env)], ...)`.
+  Requires `apm_read` (currently returns 401 — see Live findings).
 - **Shape (per service → its downstream calls):**
   ```json
   {
