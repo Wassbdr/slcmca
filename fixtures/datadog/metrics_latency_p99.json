@@ -1,0 +1,11 @@
+{
+  "_comment": "p99 trace duration per service, in MILLISECONDS (already converted from ns). Datadog v1 /query shape: each series has a 'scope' tag and a 'pointlist' of [epoch_ms, value]. fixture_client returns the last point as the SLO value.",
+  "series": [
+    { "scope": "service:ts-gateway-service", "pointlist": [[1700000000000, 4.0], [1700000060000, 5.0]] },
+    { "scope": "service:ts-travel-service", "pointlist": [[1700000000000, 22.0], [1700000060000, 24.0]] },
+    { "scope": "service:ts-order-service", "pointlist": [[1700000000000, 9.0], [1700000060000, 11.0]] },
+    { "scope": "service:ts-route-service", "pointlist": [[1700000000000, 17.0], [1700000060000, 18.0]] },
+    { "scope": "service:ts-train-service", "pointlist": [[1700000000000, 6.0], [1700000060000, 7.0]] },
+    { "scope": "service:ts-station-service", "pointlist": [[1700000000000, 12.0], [1700000060000, 13.0]] }
+  ]
+}

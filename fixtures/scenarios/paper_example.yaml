@@ -1,0 +1,31 @@
+# The paper's motivating example (§II.B). 3-component series path UI -> Auth -> Stor,
+# each 99.9% availability. Used as the regression contract.
+#
+# Paper's Auth Sub-SLA: 14 ms latency, 99.9% availability, 6 EUR/h.
+# Global target: <=18 ms, >=99.999% availability, <23 EUR/h.
+# Expected: availability envelope = 99.7% -> 99.999% target is an ascending fault.
+
+global_target:
+  response_time_ms: 18.0
+  availability_pct: 99.999
+  cost_eur_h: 23.0
+
+components:
+  - name: UI
+    csp: CSP1
+    slo:
+      response_time_ms: 10.0
+      availability_pct: 99.9
+      cost_eur_h: 8.0
+  - name: Auth
+    csp: CSP2
+    slo:
+      response_time_ms: 14.0
+      availability_pct: 99.9
+      cost_eur_h: 6.0
+  - name: Stor
+    csp: CSP3
+    slo:
+      response_time_ms: 12.0
+      availability_pct: 99.9
+      cost_eur_h: 9.0

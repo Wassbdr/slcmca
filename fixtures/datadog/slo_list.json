@@ -1,0 +1,11 @@
+{
+  "_comment": "Shape of GET /api/v1/slo (list_slos). Reference only — slacheck computes its own envelope; existing SLOs are shown for comparison.",
+  "data": [
+    {
+      "id": "abc123",
+      "name": "ts-gateway-service availability",
+      "type": "metric",
+      "thresholds": [{ "timeframe": "30d", "target": 99.9 }]
+    }
+  ]
+}

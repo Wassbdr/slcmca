@@ -1,0 +1,11 @@
+{
+  "_comment": "Total request count (trace hits as_count) per service over the window. Used as the availability denominator and as the critical-path tie-breaker (hottest path).",
+  "series": [
+    { "scope": "service:ts-gateway-service", "pointlist": [[1700000060000, 100000.0]] },
+    { "scope": "service:ts-travel-service", "pointlist": [[1700000060000, 80000.0]] },
+    { "scope": "service:ts-order-service", "pointlist": [[1700000060000, 60000.0]] },
+    { "scope": "service:ts-route-service", "pointlist": [[1700000060000, 50000.0]] },
+    { "scope": "service:ts-train-service", "pointlist": [[1700000060000, 45000.0]] },
+    { "scope": "service:ts-station-service", "pointlist": [[1700000060000, 70000.0]] }
+  ]
+}
