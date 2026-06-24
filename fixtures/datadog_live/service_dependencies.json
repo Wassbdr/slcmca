@@ -1,0 +1,116 @@
+{
+  "mongo": {
+    "calls": []
+  },
+  "ts-admin-basic-info-service": {
+    "calls": []
+  },
+  "ts-admin-order-service": {
+    "calls": []
+  },
+  "ts-admin-route-service": {
+    "calls": []
+  },
+  "ts-admin-travel-service": {
+    "calls": []
+  },
+  "ts-admin-user-service": {
+    "calls": []
+  },
+  "ts-assurance-service": {
+    "calls": []
+  },
+  "ts-auth-service": {
+    "calls": []
+  },
+  "ts-basic-service": {
+    "calls": []
+  },
+  "ts-cancel-service": {
+    "calls": []
+  },
+  "ts-config-service": {
+    "calls": []
+  },
+  "ts-consign-price-service": {
+    "calls": []
+  },
+  "ts-consign-service": {
+    "calls": []
+  },
+  "ts-contacts-service": {
+    "calls": []
+  },
+  "ts-execute-service": {
+    "calls": []
+  },
+  "ts-food-map-service": {
+    "calls": []
+  },
+  "ts-food-service": {
+    "calls": []
+  },
+  "ts-inside-payment-service": {
+    "calls": []
+  },
+  "ts-notification-service": {
+    "calls": []
+  },
+  "ts-order-other-service": {
+    "calls": []
+  },
+  "ts-order-service": {
+    "calls": []
+  },
+  "ts-payment-service": {
+    "calls": []
+  },
+  "ts-preserve-other-service": {
+    "calls": []
+  },
+  "ts-preserve-service": {
+    "calls": []
+  },
+  "ts-price-service": {
+    "calls": []
+  },
+  "ts-rebook-service": {
+    "calls": []
+  },
+  "ts-route-plan-service": {
+    "calls": []
+  },
+  "ts-route-service": {
+    "calls": []
+  },
+  "ts-seat-service": {
+    "calls": []
+  },
+  "ts-security-service": {
+    "calls": []
+  },
+  "ts-station-service": {
+    "calls": []
+  },
+  "ts-ticketinfo-service": {
+    "calls": []
+  },
+  "ts-train-service": {
+    "calls": []
+  },
+  "ts-travel-plan-service": {
+    "calls": []
+  },
+  "ts-travel-service": {
+    "calls": []
+  },
+  "ts-travel2-service": {
+    "calls": []
+  },
+  "ts-user-service": {
+    "calls": []
+  },
+  "ts-verification-code-service": {
+    "calls": []
+  }
+}
