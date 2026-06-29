@@ -50,14 +50,18 @@ def analyze(
     strategies: list[ReconfigStrategy] | None = None,
     target_slos: list[str] | None = None,
     pricing: Pricing | None = None,
+    service_filter: dict | None = None,
 ) -> AnalysisResult:
     """Run the full pipeline against a Datadog source (live or fixture).
 
     paper_version "v1": reduce the DAG to a critical series path, then evaluate (default).
     paper_version "v2": aggregate over the whole typed DAG (margins, weighted decomposition,
     reconfiguration faults). ``pricing`` enables the k8s resource-based cost estimate.
+    ``service_filter`` restricts a live cluster-wide topology to the app under study.
     """
-    graph, dropped = build_graph(source, entrypoint=entrypoint, pricing=pricing)
+    graph, dropped = build_graph(
+        source, entrypoint=entrypoint, pricing=pricing, service_filter=service_filter
+    )
 
     if paper_version == "v1":
         path = critical_path(graph, entrypoint, constraint, target=sink)

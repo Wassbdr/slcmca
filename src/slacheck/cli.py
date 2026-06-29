@@ -104,12 +104,21 @@ def analyze_cmd(
     max_cost_eur_h: float | None = typer.Option(None, help="Global target: max cost (EUR/h)."),
     cost_overrides: Path | None = typer.Option(None, help="YAML of per-service EUR/h (exact)."),
     pricing: Path | None = typer.Option(None, help="YAML cloud unit prices (k8s cost model)."),
+    service_prefix: str | None = typer.Option(None, help="Keep only services with this prefix."),
+    exclude_contains: str | None = typer.Option(None, help="Drop services whose name has this."),
     edge_overrides: Path | None = typer.Option(None, help="YAML of disjunctive groups (v2)."),
     knowledge_base: Path | None = typer.Option(None, help="YAML knowledge base / margins (v2)."),
 ) -> None:
     """Run the pipeline and print the envelope and any faults."""
     src = get_source(source, topology=topology, metrics_from=metrics_from)  # type: ignore[arg-type]
     target = _build_target(max_latency_ms, min_availability_pct, max_cost_eur_h)
+    svc_filter: dict | None = None
+    if service_prefix or exclude_contains:
+        svc_filter = {}
+        if service_prefix:
+            svc_filter["include_prefix"] = service_prefix
+        if exclude_contains:
+            svc_filter["exclude_contains"] = exclude_contains
     edges = yaml.safe_load(edge_overrides.read_text()) if edge_overrides else None
     kb = None
     if knowledge_base is not None:
@@ -124,6 +133,7 @@ def analyze_cmd(
     result = analyze(
         src, entrypoint, constraint, target=target, sink=sink,  # type: ignore[arg-type]
         paper_version=paper_version, edge_overrides=edges, kb=kb, pricing=price,  # type: ignore[arg-type]
+        service_filter=svc_filter,
     )
     _apply_cost_overrides(result, cost_overrides)
     if cost_overrides is not None and paper_version == "v1":

@@ -17,7 +17,7 @@ from slacheck.datadog.metrics import (
     k8s_cost_model,
 )
 from slacheck.datadog.source import DatadogSource
-from slacheck.datadog.topology import parse_edges, parse_services
+from slacheck.datadog.topology import filter_deps, parse_edges, parse_services
 from slacheck.models import Component, Pricing, ResourceMetrics, SloValues
 
 
@@ -25,6 +25,7 @@ def build_graph(
     source: DatadogSource,
     entrypoint: str | None = None,
     pricing: Pricing | None = None,
+    service_filter: dict | None = None,
 ) -> tuple[nx.DiGraph, list[tuple[str, str]]]:
     """Assemble the topology graph. Returns ``(dag, dropped_edges)``.
 
@@ -32,8 +33,12 @@ def build_graph(
     If ``entrypoint`` is given, cycles are broken from its perspective (back-edges first),
     which preserves forward reachability from the entrypoint. If ``pricing`` is given, a
     per-service cost is estimated from reserved k8s resources where APM/declared cost is absent.
+    ``service_filter`` (kwargs for :func:`filter_deps`, e.g. ``{"include_prefix": "ts-"}``)
+    restricts a live cluster-wide topology to the app under study.
     """
     deps = source.service_dependencies()
+    if service_filter:
+        deps = filter_deps(deps, **service_filter)
     edges = parse_edges(deps)
     services = parse_services(deps)
     slo_by_service = collect_with_samples(source)
