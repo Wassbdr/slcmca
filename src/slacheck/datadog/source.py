@@ -12,6 +12,10 @@ from typing import Literal, Protocol, runtime_checkable
 from slacheck.config import Settings
 
 SourceKind = Literal["fixture", "live", "declared"]
+MetricKind = Literal["latency_p99", "error_count", "request_count"]
+K8sMetricKind = Literal[
+    "cpu_nanocores", "mem_bytes", "restarts", "replicas_ready", "replicas_desired"
+]
 
 
 @runtime_checkable
@@ -22,11 +26,11 @@ class DatadogSource(Protocol):
         """Map of ``{service: {"calls": [downstream, ...]}}`` (APM service map)."""
         ...
 
-    def metric_series(self, kind: Literal["latency_p99", "error_count", "request_count"]) -> dict:
+    def metric_series(self, kind: MetricKind) -> dict:
         """Raw timeseries response: ``{"series": [{"scope": "service:X", "pointlist": [...]}]}``."""
         ...
 
-    def k8s_metric_series(self, kind: Literal["cpu_nanocores", "mem_bytes", "restarts"]) -> dict:
+    def k8s_metric_series(self, kind: K8sMetricKind) -> dict:
         """Raw k8s resource timeseries grouped by kube_deployment (scope ``kube_deployment:X``)."""
         ...
 

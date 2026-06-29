@@ -42,9 +42,14 @@ def test_empty_inputs_raise():
         agg_availability_disjunctive([])
 
 
-def test_out_of_range_availability_rejected():
-    # garbage-in must not silently produce garbage-out (e.g. 150% availability)
+def test_impossible_availability_above_100_rejected():
+    # > 100% availability is physically impossible → rejected
     with pytest.raises(ValueError):
         agg_availability_disjunctive([99.9, 150.0])
     with pytest.raises(ValueError):
-        agg_availability_conjunctive([-5.0])
+        agg_availability_conjunctive([150.0])
+
+
+def test_negative_intermediate_allowed():
+    # composition may legitimately go negative for an over-committed chain (not an error)
+    assert agg_availability_conjunctive([50.0, 50.0, 50.0]) == pytest.approx(-50.0)

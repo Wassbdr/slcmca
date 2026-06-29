@@ -102,3 +102,20 @@ def collect_k8s_metrics(source: DatadogSource) -> dict[str, ResourceMetrics]:
         )
         for name in deployments
     }
+
+
+def k8s_availability_proxy(source: DatadogSource) -> dict[str, float]:
+    """Per-service availability proxy from deployment readiness (paper Sub-SLO stand-in).
+
+    ``availability ≈ replicas_ready / replicas_desired × 100``. This is a deployment-readiness
+    proxy available from ``kubernetes_state.*`` metrics even when APM trace metrics are not —
+    NOT a true request-success or uptime SLO. Deployments scaled to 0 (no desired replicas)
+    are skipped rather than reported as 0% or dividing by zero.
+    """
+    ready = _last_value_by_tag(source.k8s_metric_series("replicas_ready"), _DEPLOYMENT_TAG)
+    desired = _last_value_by_tag(source.k8s_metric_series("replicas_desired"), _DEPLOYMENT_TAG)
+    out: dict[str, float] = {}
+    for name, want in desired.items():
+        if want and want > 0:
+            out[name] = min(ready.get(name, 0.0) / want, 1.0) * 100.0
+    return out

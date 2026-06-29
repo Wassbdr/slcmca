@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Literal
 
+from slacheck.datadog.source import K8sMetricKind
+
 _FIXTURES = Path(__file__).resolve().parents[3] / "fixtures" / "datadog"
 
 _METRIC_FILES = {
@@ -18,6 +20,8 @@ _K8S_FILES = {
     "cpu_nanocores": "k8s_cpu_nanocores.json",
     "mem_bytes": "k8s_mem_bytes.json",
     "restarts": "k8s_restarts.json",
+    "replicas_ready": "k8s_replicas_ready.json",
+    "replicas_desired": "k8s_replicas_desired.json",
 }
 
 
@@ -38,7 +42,7 @@ class FixtureClient:
     def metric_series(self, kind: Literal["latency_p99", "error_count", "request_count"]) -> dict:
         return self._load(_METRIC_FILES[kind])
 
-    def k8s_metric_series(self, kind: Literal["cpu_nanocores", "mem_bytes", "restarts"]) -> dict:
+    def k8s_metric_series(self, kind: K8sMetricKind) -> dict:
         path = self._dir / _K8S_FILES[kind]
         if not path.exists():  # k8s enrichment is optional in offline fixtures
             return {"series": []}

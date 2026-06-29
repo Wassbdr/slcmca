@@ -19,13 +19,20 @@ def agg_cost_v2(values: Sequence[float]) -> float:
 
 
 def _check_availability(values: Sequence[float]) -> None:
+    """Reject physically-impossible availabilities (> 100). Values < 0 are allowed because
+    composition legitimately yields negative *intermediates* for an over-committed chain
+    (the error budget exceeds 100% — i.e. structurally impossible). Leaf SLO values are
+    range-validated upstream at ingestion; this guards only against absurd inputs."""
     for v in values:
-        if not 0.0 <= v <= 100.0:
-            raise ValueError(f"availability must be in [0, 100], got {v}")
+        if v > 100.0:
+            raise ValueError(f"availability cannot exceed 100, got {v}")
 
 
 def agg_availability_conjunctive(values: Sequence[float]) -> float:
-    """Conjunctive: 100 − Σ(100 − vᵢ). Identical to paper-v1 error-budget composition."""
+    """Conjunctive: 100 − Σ(100 − vᵢ). Identical to paper-v1 error-budget composition.
+
+    May return a negative value when the composed error budget exceeds 100% — a valid
+    "structurally impossible" signal for a deeply over-committed chain."""
     if not values:
         raise ValueError("agg_availability_conjunctive requires at least one value")
     _check_availability(values)

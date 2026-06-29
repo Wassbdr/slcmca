@@ -19,11 +19,10 @@ topology.yaml shape::
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
 
 import yaml
 
-from slacheck.datadog.source import DatadogSource
+from slacheck.datadog.source import DatadogSource, K8sMetricKind, MetricKind
 
 
 class DeclaredClient:
@@ -45,10 +44,10 @@ class DeclaredClient:
             out.setdefault(svc, {"calls": []})
         return out
 
-    def metric_series(self, kind: Literal["latency_p99", "error_count", "request_count"]) -> dict:
+    def metric_series(self, kind: MetricKind) -> dict:
         return self._metrics.metric_series(kind)
 
-    def k8s_metric_series(self, kind: Literal["cpu_nanocores", "mem_bytes", "restarts"]) -> dict:
+    def k8s_metric_series(self, kind: K8sMetricKind) -> dict:
         return self._metrics.k8s_metric_series(kind)
 
     def list_slos(self) -> dict:

@@ -10,7 +10,11 @@ from __future__ import annotations
 
 import networkx as nx
 
-from slacheck.datadog.metrics import collect_k8s_metrics, collect_with_samples
+from slacheck.datadog.metrics import (
+    collect_k8s_metrics,
+    collect_with_samples,
+    k8s_availability_proxy,
+)
 from slacheck.datadog.source import DatadogSource
 from slacheck.datadog.topology import parse_edges, parse_services
 from slacheck.models import Component, ResourceMetrics, SloValues
@@ -30,10 +34,15 @@ def build_graph(
     services = parse_services(deps)
     slo_by_service = collect_with_samples(source)
     k8s_by_service = collect_k8s_metrics(source)
+    avail_proxy = k8s_availability_proxy(source)
 
     g = nx.DiGraph()
     for name in sorted(services):
         slo, sample = slo_by_service.get(name, (SloValues(), {}))
+        # fall back to the k8s readiness proxy only when APM gives no availability
+        if slo.availability_pct is None and name in avail_proxy:
+            slo = slo.model_copy(update={"availability_pct": avail_proxy[name]})
+            sample = {**sample, "availability_source": "k8s_readiness_proxy"}
         resources = k8s_by_service.get(name, ResourceMetrics())
         g.add_node(
             name,

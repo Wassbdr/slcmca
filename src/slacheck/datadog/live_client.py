@@ -31,7 +31,18 @@ _K8S_QUERIES = {
     "cpu_nanocores": "avg:kubernetes.cpu.usage.total{{{ns}}} by {{kube_deployment}}",
     "mem_bytes": "avg:kubernetes.memory.usage{{{ns}}} by {{kube_deployment}}",
     "restarts": "sum:kubernetes.containers.restarts{{{ns}}} by {{kube_deployment}}",
+    # deployment readiness → availability proxy when APM trace metrics are unavailable
+    "replicas_ready": (
+        "sum:kubernetes_state.deployment.replicas_ready{{{ns}}} by {{kube_deployment}}"
+    ),
+    "replicas_desired": (
+        "sum:kubernetes_state.deployment.replicas_desired{{{ns}}} by {{kube_deployment}}"
+    ),
 }
+
+_K8sKind = Literal[
+    "cpu_nanocores", "mem_bytes", "restarts", "replicas_ready", "replicas_desired"
+]
 
 
 class LiveClient:
@@ -147,7 +158,7 @@ class LiveClient:
     def metric_series(self, kind: Literal["latency_p99", "error_count", "request_count"]) -> dict:
         return self._query(_QUERIES[kind])
 
-    def k8s_metric_series(self, kind: Literal["cpu_nanocores", "mem_bytes", "restarts"]) -> dict:
+    def k8s_metric_series(self, kind: _K8sKind) -> dict:
         """Kubernetes resource metric grouped by kube_deployment, scoped to DD_K8S_NAMESPACE."""
         ns_filter = f"kube_namespace:{self._settings.k8s_namespace}"
         return self._query(_K8S_QUERIES[kind].format(ns=ns_filter))
