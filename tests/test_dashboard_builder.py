@@ -38,6 +38,18 @@ def test_critical_path_group_has_one_widget_per_service(result_feasible):
     assert len(group["definition"]["widgets"]) == n_services
 
 
+def test_resource_health_group_present(result_feasible):
+    dash = build_dashboard(result_feasible)
+    group = next(
+        w for w in dash["widgets"] if w["definition"].get("title") == "Resource Health (k8s)"
+    )
+    n_services = len(result_feasible.verdict.envelope.path)
+    assert len(group["definition"]["widgets"]) == n_services
+    # k8s resource widgets query by kube_deployment, not service:
+    q = group["definition"]["widgets"][0]["definition"]["requests"][0]["q"]
+    assert "kube_deployment:" in q
+
+
 def test_overcommitted_dashboard_is_red_with_fault_notes(result_overcommitted):
     dash = build_dashboard(result_overcommitted)
     verdict_note = dash["widgets"][0]["definition"]

@@ -15,6 +15,9 @@ from slacheck.pipeline import AnalysisResult
 # trace metric templates — keep in sync with datadog/live_client.py and the catalog §2
 _LATENCY_Q = "p99:trace.http.request.duration{{service:{svc}}}"
 _ERRORS_Q = "sum:trace.http.request.errors{{service:{svc}}}.as_count()"
+# k8s resource templates — available without APM (catalog §4), keyed by kube_deployment
+_CPU_Q = "avg:kubernetes.cpu.usage.total{{kube_deployment:{svc}}}"
+_MEM_Q = "avg:kubernetes.memory.usage{{kube_deployment:{svc}}}"
 
 
 def _verdict_markdown(result: AnalysisResult) -> str:
@@ -55,6 +58,19 @@ def _timeseries(svc: str) -> dict:
             "requests": [
                 {"q": _LATENCY_Q.format(svc=svc), "display_type": "line"},
                 {"q": _ERRORS_Q.format(svc=svc), "display_type": "bars"},
+            ],
+        }
+    }
+
+
+def _resource_timeseries(svc: str) -> dict:
+    return {
+        "definition": {
+            "type": "timeseries",
+            "title": f"{svc} — resources",
+            "requests": [
+                {"q": _CPU_Q.format(svc=svc), "display_type": "line"},
+                {"q": _MEM_Q.format(svc=svc), "display_type": "line"},
             ],
         }
     }
@@ -101,9 +117,11 @@ def build_dashboard(result: AnalysisResult, title: str | None = None) -> dict:
         )
     topology_lines += [f"_{n}_" for n in verdict.notes]
 
+    path = verdict.envelope.path
     widgets = [
         _note(_verdict_markdown(result), color=verdict_color, size="l"),
-        _group("Critical Path", [_timeseries(svc) for svc in verdict.envelope.path]),
+        _group("Critical Path", [_timeseries(svc) for svc in path]),
+        _group("Resource Health (k8s)", [_resource_timeseries(svc) for svc in path]),
         _group("Over-Commitment Faults", _fault_notes(verdict)),
         _group("Topology & Caveats", [_note("\n\n".join(topology_lines))]),
     ]

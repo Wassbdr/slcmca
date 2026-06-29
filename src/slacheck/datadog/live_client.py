@@ -25,6 +25,14 @@ _QUERIES = {
     "request_count": "sum:trace.http.request.hits{*} by {service}.as_count()",
 }
 
+# Kubernetes resource metrics, grouped by kube_deployment (== service name for ts-*).
+# {ns} is filled with the namespace filter at call time. Available without APM.
+_K8S_QUERIES = {
+    "cpu_nanocores": "avg:kubernetes.cpu.usage.total{{{ns}}} by {{kube_deployment}}",
+    "mem_bytes": "avg:kubernetes.memory.usage{{{ns}}} by {{kube_deployment}}",
+    "restarts": "sum:kubernetes.containers.restarts{{{ns}}} by {{kube_deployment}}",
+}
+
 
 class LiveClient:
     """Talks to the real Datadog API. Requires the ``datadog`` extra and credentials."""
@@ -113,22 +121,36 @@ class LiveClient:
         return deps
 
     # ------------------------------------------------------------- metrics
-    def metric_series(self, kind: Literal["latency_p99", "error_count", "request_count"]) -> dict:
+    def _query(self, query: str) -> dict:
+        """Run a timeseries query, normalize to {"series":[{"scope","pointlist"}]}."""
         from datadog_api_client import ApiClient
         from datadog_api_client.v1.api.metrics_api import MetricsApi
 
         now = int(time.time())
         with ApiClient(self._config) as client:
-            api = MetricsApi(client)
-            resp = api.query_metrics(_from=now - self._window, to=now, query=_QUERIES[kind])
-
-        # resp.series is a list of MetricsQueryMetadata models; read attributes, not .get()
+            resp = MetricsApi(client).query_metrics(
+                _from=now - self._window, to=now, query=query
+            )
+        # resp.series is a list of MetricsQueryMetadata models; read attributes, not .get().
+        # Each pointlist item is a Point model whose .value is the [timestamp, value] pair.
         series = []
         for s in getattr(resp, "series", []) or []:
             scope = getattr(s, "scope", "") or ""
-            pointlist = getattr(s, "pointlist", []) or []
-            series.append({"scope": scope, "pointlist": [list(p) for p in pointlist]})
+            points = []
+            for p in getattr(s, "pointlist", []) or []:
+                pair = getattr(p, "value", None)
+                if pair is not None:
+                    points.append([float(pair[0]), pair[1]])
+            series.append({"scope": scope, "pointlist": points})
         return {"series": series}
+
+    def metric_series(self, kind: Literal["latency_p99", "error_count", "request_count"]) -> dict:
+        return self._query(_QUERIES[kind])
+
+    def k8s_metric_series(self, kind: Literal["cpu_nanocores", "mem_bytes", "restarts"]) -> dict:
+        """Kubernetes resource metric grouped by kube_deployment, scoped to DD_K8S_NAMESPACE."""
+        ns_filter = f"kube_namespace:{self._settings.k8s_namespace}"
+        return self._query(_K8S_QUERIES[kind].format(ns=ns_filter))
 
     # --------------------------------------------------------------- slos
     def list_slos(self) -> dict:

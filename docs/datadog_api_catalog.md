@@ -120,11 +120,18 @@ Surfaced in the verdict and dashboard note.
 
 ---
 
-## 4. Infrastructure / Kubernetes (context)
+## 4. Infrastructure / Kubernetes — IMPLEMENTED (works without APM)
 - **Hosts (v1):** `hosts_api.HostsApi.list_hosts()` → GET `/api/v1/hosts`.
-- **Container/k8s metrics:** `kubernetes.cpu.usage.total`, `kubernetes.memory.usage` via the metrics
-  query above. Relevant for the **operational translation** (paper §IV.D: throughput SLO → CPU>80%
-  trigger) — out of scope for the first PoC but the data is available here.
+- **Container/k8s metrics — confirmed live (2026-06-24), 64–65 series for `tt-slacheck`:**
+  | signal | query (grouped by `kube_deployment` == service name) |
+  |---|---|
+  | CPU (nanocores) | `avg:kubernetes.cpu.usage.total{kube_namespace:<ns>} by {kube_deployment}` |
+  | memory (bytes) | `avg:kubernetes.memory.usage{kube_namespace:<ns>} by {kube_deployment}` |
+  | restarts | `sum:kubernetes.containers.restarts{kube_namespace:<ns>} by {kube_deployment}` |
+- Wired into slacheck: `live_client.k8s_metric_series`, `metrics.collect_k8s_metrics` →
+  `Component.resources` (`ResourceMetrics`), surfaced in the dashboard "Resource Health (k8s)" group.
+  **This is the live signal available today while APM trace ingestion is blocked** (see Live findings).
+- Also relevant for the **operational translation** (paper §IV.D: throughput SLO → CPU>80% trigger).
 
 ---
 

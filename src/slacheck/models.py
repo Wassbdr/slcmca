@@ -34,8 +34,21 @@ class SloValues(BaseModel):
         return 100.0 - self.availability_pct
 
 
+class ResourceMetrics(BaseModel):
+    """Per-service Kubernetes resource signals (infra health, beyond the paper's SLOs).
+
+    These come from ``kubernetes.*`` metrics tagged by ``kube_deployment`` and are
+    available even when APM tracing is not (see docs/datadog_api_catalog.md §4). They
+    enrich the verdict with a resource-pressure view; they do not feed the SLA operators.
+    """
+
+    cpu_nanocores: float | None = None  # avg kubernetes.cpu.usage.total (nanocores)
+    mem_bytes: float | None = None  # avg kubernetes.memory.usage (bytes)
+    restarts: float | None = None  # sum kubernetes.containers.restarts over the window
+
+
 class Component(BaseModel):
-    """A service node: its name, optional CSP, measured Sub-SLO, and raw sample.
+    """A service node: its name, optional CSP, measured Sub-SLO, infra resources, and raw sample.
 
     ``sample`` keeps the raw Datadog counters (request_count / error_count) for
     traceability so a verdict can be audited back to the metrics it came from.
@@ -44,6 +57,7 @@ class Component(BaseModel):
     name: str
     csp: str | None = None
     slo: SloValues = Field(default_factory=SloValues)
+    resources: ResourceMetrics = Field(default_factory=ResourceMetrics)
     sample: dict = Field(default_factory=dict)
 
 

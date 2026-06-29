@@ -25,6 +25,10 @@ class DatadogSource(Protocol):
         """Raw timeseries response: ``{"series": [{"scope": "service:X", "pointlist": [...]}]}``."""
         ...
 
+    def k8s_metric_series(self, kind: Literal["cpu_nanocores", "mem_bytes", "restarts"]) -> dict:
+        """Raw k8s resource timeseries grouped by kube_deployment (scope ``kube_deployment:X``)."""
+        ...
+
     def list_slos(self) -> dict:
         """Raw GET /api/v1/slo response (reference only)."""
         ...

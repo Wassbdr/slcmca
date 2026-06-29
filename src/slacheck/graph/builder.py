@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import networkx as nx
 
-from slacheck.datadog.metrics import collect_with_samples
+from slacheck.datadog.metrics import collect_k8s_metrics, collect_with_samples
 from slacheck.datadog.source import DatadogSource
 from slacheck.datadog.topology import parse_edges, parse_services
-from slacheck.models import Component, SloValues
+from slacheck.models import Component, ResourceMetrics, SloValues
 
 
 def build_graph(
@@ -29,11 +29,16 @@ def build_graph(
     edges = parse_edges(deps)
     services = parse_services(deps)
     slo_by_service = collect_with_samples(source)
+    k8s_by_service = collect_k8s_metrics(source)
 
     g = nx.DiGraph()
     for name in sorted(services):
         slo, sample = slo_by_service.get(name, (SloValues(), {}))
-        g.add_node(name, component=Component(name=name, slo=slo, sample=sample))
+        resources = k8s_by_service.get(name, ResourceMetrics())
+        g.add_node(
+            name,
+            component=Component(name=name, slo=slo, resources=resources, sample=sample),
+        )
     g.add_edges_from(edges)
 
     dropped = _break_cycles(g, entrypoint)

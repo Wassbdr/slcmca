@@ -13,7 +13,8 @@ class Settings(BaseSettings):
     api_key: str | None = None
     app_key: str | None = None
     site: str = "datadoghq.eu"
-    env: str = "prod"
+    env: str = "prod"  # APM env tag (e.g. slacheck)
+    k8s_namespace: str = "tt-slacheck"  # for kubernetes.* resource metrics (may differ from env)
 
     @property
     def has_credentials(self) -> bool:
