@@ -1,0 +1,24 @@
+# Paper-v2 disjunctive redundancy case: Stor is backed by two redundant providers
+# StorA / StorB (each 99.9%), wired as DISJUNCTIVE (OR) — the system stays up if either is up.
+# Exercises the product operator: disjunctive availability of two 99.9% = 99.9999%,
+# which raises the global envelope above the all-conjunctive 99.8%.
+
+entrypoint: UI
+
+global_target:
+  availability_pct: 99.99
+
+components:
+  - name: UI
+    slo: { availability_pct: 99.9 }
+  - name: Stor
+    slo: { availability_pct: 99.9 }
+  - name: StorA
+    slo: { availability_pct: 99.9 }
+  - name: StorB
+    slo: { availability_pct: 99.9 }
+
+edges:
+  - { source: UI, target: Stor, edge_type: conjunctive }
+  - { source: Stor, target: StorA, edge_type: disjunctive }
+  - { source: Stor, target: StorB, edge_type: disjunctive }
