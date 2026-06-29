@@ -9,7 +9,7 @@ Conversions (see docs/datadog_api_catalog.md §2):
 from __future__ import annotations
 
 from slacheck.datadog.source import DatadogSource
-from slacheck.models import ResourceMetrics, SloValues
+from slacheck.models import Pricing, ResourceMetrics, SloValues
 
 _SERVICE_TAG = "service:"
 _DEPLOYMENT_TAG = "kube_deployment:"
@@ -118,4 +118,24 @@ def k8s_availability_proxy(source: DatadogSource) -> dict[str, float]:
     for name, want in desired.items():
         if want and want > 0:
             out[name] = min(ready.get(name, 0.0) / want, 1.0) * 100.0
+    return out
+
+
+_BYTES_PER_GB = 1024**3
+
+
+def k8s_cost_model(source: DatadogSource, pricing: Pricing) -> dict[str, float]:
+    """Per-service cost estimate from reserved k8s resources (Datadog has no per-service cost).
+
+    ``cost_eur_h ≈ cpu_cores·cpu_eur_per_core_h + mem_gb·mem_eur_per_gb_h`` using
+    ``kubernetes.cpu.requests`` (cores) and ``kubernetes.memory.requests`` (bytes). A
+    resource-reservation estimate, NOT a cloud bill. Services with no reservation are omitted.
+    """
+    cpu = _last_value_by_tag(source.k8s_metric_series("cpu_requests"), _DEPLOYMENT_TAG)
+    mem = _last_value_by_tag(source.k8s_metric_series("mem_requests"), _DEPLOYMENT_TAG)
+    out: dict[str, float] = {}
+    for name in set(cpu) | set(mem):
+        cpu_cost = cpu.get(name, 0.0) * pricing.cpu_eur_per_core_h
+        mem_cost = (mem.get(name, 0.0) / _BYTES_PER_GB) * pricing.mem_eur_per_gb_h
+        out[name] = cpu_cost + mem_cost
     return out

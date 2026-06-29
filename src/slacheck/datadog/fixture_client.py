@@ -22,6 +22,8 @@ _K8S_FILES = {
     "restarts": "k8s_restarts.json",
     "replicas_ready": "k8s_replicas_ready.json",
     "replicas_desired": "k8s_replicas_desired.json",
+    "cpu_requests": "k8s_cpu_requests.json",
+    "mem_requests": "k8s_mem_requests.json",
 }
 
 

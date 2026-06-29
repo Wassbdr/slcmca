@@ -38,10 +38,15 @@ _K8S_QUERIES = {
     "replicas_desired": (
         "sum:kubernetes_state.deployment.replicas_desired{{{ns}}} by {{kube_deployment}}"
     ),
+    # reserved resources → cost model (cores, bytes)
+    "cpu_requests": "sum:kubernetes.cpu.requests{{{ns}}} by {{kube_deployment}}",
+    "mem_requests": "sum:kubernetes.memory.requests{{{ns}}} by {{kube_deployment}}",
 }
 
 _K8sKind = Literal[
-    "cpu_nanocores", "mem_bytes", "restarts", "replicas_ready", "replicas_desired"
+    "cpu_nanocores", "mem_bytes", "restarts",
+    "replicas_ready", "replicas_desired",
+    "cpu_requests", "mem_requests",
 ]
 
 

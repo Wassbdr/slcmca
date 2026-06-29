@@ -14,20 +14,24 @@ from slacheck.datadog.metrics import (
     collect_k8s_metrics,
     collect_with_samples,
     k8s_availability_proxy,
+    k8s_cost_model,
 )
 from slacheck.datadog.source import DatadogSource
 from slacheck.datadog.topology import parse_edges, parse_services
-from slacheck.models import Component, ResourceMetrics, SloValues
+from slacheck.models import Component, Pricing, ResourceMetrics, SloValues
 
 
 def build_graph(
-    source: DatadogSource, entrypoint: str | None = None
+    source: DatadogSource,
+    entrypoint: str | None = None,
+    pricing: Pricing | None = None,
 ) -> tuple[nx.DiGraph, list[tuple[str, str]]]:
     """Assemble the topology graph. Returns ``(dag, dropped_edges)``.
 
     Each node carries a ``component`` attribute (a :class:`Component` with measured SLOs).
     If ``entrypoint`` is given, cycles are broken from its perspective (back-edges first),
-    which preserves forward reachability from the entrypoint.
+    which preserves forward reachability from the entrypoint. If ``pricing`` is given, a
+    per-service cost is estimated from reserved k8s resources where APM/declared cost is absent.
     """
     deps = source.service_dependencies()
     edges = parse_edges(deps)
@@ -35,6 +39,7 @@ def build_graph(
     slo_by_service = collect_with_samples(source)
     k8s_by_service = collect_k8s_metrics(source)
     avail_proxy = k8s_availability_proxy(source)
+    cost_model = k8s_cost_model(source, pricing) if pricing is not None else {}
 
     g = nx.DiGraph()
     for name in sorted(services):
@@ -43,6 +48,10 @@ def build_graph(
         if slo.availability_pct is None and name in avail_proxy:
             slo = slo.model_copy(update={"availability_pct": avail_proxy[name]})
             sample = {**sample, "availability_source": "k8s_readiness_proxy"}
+        # estimate cost from reserved resources only when no cost is otherwise present
+        if slo.cost_eur_h is None and name in cost_model:
+            slo = slo.model_copy(update={"cost_eur_h": cost_model[name]})
+            sample = {**sample, "cost_source": "k8s_resource_model"}
         resources = k8s_by_service.get(name, ResourceMetrics())
         g.add_node(
             name,

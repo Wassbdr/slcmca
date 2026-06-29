@@ -14,7 +14,9 @@ from slacheck.config import Settings
 SourceKind = Literal["fixture", "live", "declared"]
 MetricKind = Literal["latency_p99", "error_count", "request_count"]
 K8sMetricKind = Literal[
-    "cpu_nanocores", "mem_bytes", "restarts", "replicas_ready", "replicas_desired"
+    "cpu_nanocores", "mem_bytes", "restarts",
+    "replicas_ready", "replicas_desired",
+    "cpu_requests", "mem_requests",
 ]
 
 

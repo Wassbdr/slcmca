@@ -1,0 +1,11 @@
+# Cloud unit prices for the k8s resource-based cost model.
+# cost_eur_h(service) ≈ cpu_cores·cpu_eur_per_core_h + mem_gb·mem_eur_per_gb_h
+# Defaults below are rough public-cloud rates (adjust to your provider/region).
+# This is a RESERVATION ESTIMATE from kubernetes.cpu/memory.requests, not a cloud bill.
+#
+#   slacheck analyze --source declared --topology fixtures/topology/train-ticket.yaml \
+#     --metrics-from live --pricing fixtures/scenarios/pricing.example.yaml \
+#     --paper-version v2 -e ts-ui-dashboard -c availability
+
+cpu_eur_per_core_h: 0.03   # ~ on-demand vCPU/hour
+mem_eur_per_gb_h: 0.004    # ~ GiB-hour

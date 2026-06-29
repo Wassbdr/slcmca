@@ -40,6 +40,18 @@ class SloValues(BaseModel):
         return 100.0 - self.availability_pct
 
 
+class Pricing(BaseModel):
+    """Cloud unit prices for the k8s resource-based cost model (paper §IV.C cost SLO).
+
+    Datadog has no per-microservice cost, so cost is estimated from reserved CPU/memory:
+    ``cost_eur_h ≈ cpu_cores·cpu_eur_per_core_h + mem_gb·mem_eur_per_gb_h``. Defaults are
+    rough public cloud rates; override with a pricing YAML. This is an estimate, not a bill.
+    """
+
+    cpu_eur_per_core_h: float = 0.03
+    mem_eur_per_gb_h: float = 0.004
+
+
 class ResourceMetrics(BaseModel):
     """Per-service Kubernetes resource signals (infra health, beyond the paper's SLOs).
 

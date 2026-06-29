@@ -135,15 +135,19 @@ Surfaced in the verdict and dashboard note.
 
 ---
 
-## 5. Cost — the gap (do not fake it)
+## 5. Cost — the gap and two stand-ins (do not fake it)
 - **Cloud Cost Management (v2):** `cloud_cost_management_api.*` → cloud-bill cost by AWS/GCP/Azure
-  account/tag. **This is the cloud invoice, not per-microservice EUR/h.** Mapping a bill line to
-  `ts-auth-service` is not something Datadog gives directly, and Cloud Cost may not be enabled on this
-  org at all.
-- **→ slacheck:** `cost_eur_h` defaults to `None`. The cost operator/fault runs **only** when an
-  explicit `cost_overrides.yaml` (per-service EUR/h, hand-supplied like the paper's YAML) is provided.
-  Otherwise the verdict states *"cost data unavailable from Datadog; supply overrides to enable cost
-  SLO."* This is the honest position the internship should take.
+  account/tag. **This is the cloud invoice, not per-microservice EUR/h** — and it returns 0 series on
+  this org (not enabled). Mapping a bill line to `ts-auth-service` is not something Datadog gives.
+- **Stand-in A — k8s resource cost model (live, automatic).** `kubernetes.cpu.requests` (cores) and
+  `kubernetes.memory.requests` (bytes) DO flow live (64 series). slacheck estimates
+  `cost_eur_h ≈ cpu_cores·cpu_eur_per_core_h + mem_gb·mem_eur_per_gb_h` from a `pricing.yaml`
+  (`models.Pricing`, `metrics.k8s_cost_model`, `--pricing`). A **reservation estimate, not a bill** —
+  but live and per-service, symmetric to the availability readiness proxy.
+- **Stand-in B — declared overrides (exact).** `cost_overrides.yaml` (per-service EUR/h, hand-supplied
+  like the paper's YAML) takes precedence when present.
+- **→ slacheck:** `cost_eur_h` is `None` unless `--pricing` (model) or `--cost-overrides` (exact) is
+  given; the verdict notes the source (`cost_source: k8s_resource_model`). Never a fabricated bill.
 
 ---
 
