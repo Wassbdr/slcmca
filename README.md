@@ -43,6 +43,25 @@ slacheck analyze --source live --entrypoint ts-gateway-service --constraint late
 slacheck publish --source live --entrypoint ts-gateway-service --constraint latency
 ```
 
+## Reproducing the train-ticket case study
+
+The paper's Real-World Case Study (38 services) is fully reproducible **offline** from the declared
+topology + fixture metrics — no credentials:
+
+```bash
+python scripts/case_study.py        # emits the v1-vs-v2 numbers + the LaTeX table (tab:casestudy)
+
+# the underlying analyze invocations it runs:
+slacheck analyze --source declared --topology fixtures/topology/train-ticket.yaml \
+  --metrics-from fixture --paper-version v2 -e ts-ui-dashboard -c availability \
+  --min-availability-pct 99.9 --pricing fixtures/scenarios/pricing.example.yaml   # v2: 6 faults, env 98.36%
+#   ...same with --paper-version v1 → 3 faults, env 99.40%
+#   ...with -c latency --max-latency-ms 30 → v1 feasible (24ms) vs v2 fault (48ms)
+```
+
+`tests/test_case_study.py` locks these numbers. The live Datadog path (real APM topology,
+provenance only) is documented in [fixtures/datadog_live/README.md](fixtures/datadog_live/README.md).
+
 ## Docs
 
 - [docs/datadog_api_catalog.md](docs/datadog_api_catalog.md) — **start here**: what Datadog exposes,
