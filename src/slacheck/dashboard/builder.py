@@ -20,19 +20,27 @@ _CPU_Q = "avg:kubernetes.cpu.usage.total{{kube_deployment:{svc}}}"
 _MEM_Q = "avg:kubernetes.memory.usage{{kube_deployment:{svc}}}"
 
 
-def _verdict_markdown(result: AnalysisResult) -> str:
-    env = result.verdict.envelope
+def _fmt_env(env) -> str:
     lat = f"{env.response_time_ms:g} ms" if env.response_time_ms is not None else "n/a"
     av = f"{env.availability_pct:g}%" if env.availability_pct is not None else "n/a"
     cost = f"{env.cost_eur_h:g} EUR/h" if env.cost_eur_h is not None else "n/a (Datadog gap)"
-    status = "✅ FEASIBLE" if result.verdict.feasible else "❌ OVER-COMMITTED"
-    return (
-        f"## SLA envelope — {status}\n\n"
+    return f"- latency ≤ **{lat}**\n- availability ≤ **{av}**\n- cost ≤ **{cost}**"
+
+
+def _verdict_markdown(result: AnalysisResult) -> str:
+    v = result.verdict
+    env = v.envelope
+    status = "✅ FEASIBLE" if v.feasible else "❌ OVER-COMMITTED"
+    label = "topological order" if result.paper_version == "v2" else "critical path"
+    md = (
+        f"## SLA envelope — {status}  ({result.paper_version})\n\n"
         f"**Constraint:** {result.constraint} from `{result.entrypoint}`\n\n"
-        f"Achievable on the critical path:\n"
-        f"- latency ≤ **{lat}**\n- availability ≤ **{av}**\n- cost ≤ **{cost}**\n\n"
-        f"Path: {' → '.join(env.path)}"
+        f"Achievable envelope A*:\n{_fmt_env(env)}\n\n"
     )
+    if v.commit_envelope is not None:
+        md += f"Safely committable A_commit (after γ margins):\n{_fmt_env(v.commit_envelope)}\n\n"
+    md += f"{label.capitalize()}: {' → '.join(env.path)}"
+    return md
 
 
 def _note(content: str, color: str = "white", size: str = "m") -> dict:

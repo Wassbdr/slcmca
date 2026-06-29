@@ -1,8 +1,21 @@
 # Paper → code mapping
 
-Maps the ISSRE 2026 paper *"What SLA Can I Commit To?"* to slacheck modules. The paper works on a
-hand-written YAML topology; slacheck sources the same structure from live Datadog (see
-`datadog_api_catalog.md`) and presents the result as a Datadog dashboard.
+Maps the ISSRE 2026 paper *"What SLA Can I Commit To?"* to slacheck modules. **Two versions of the
+paper coexist in this repo and both are implemented**, selectable via `--paper-version v1|v2`
+(default `v1`):
+
+- **v1** (`ISSRE_2026__...Applications.pdf`, 3 pages): series-only aggregation, uniform decomposition.
+  Its exact worked numbers are the **frozen regression contract** — never change v1 code/tests.
+- **v2** (`ISSRE_2026__What_SLA_Can_I_Commit_To__v2.pdf`, 5 pages): typed DAG, topology-sensitive
+  operators (incl. disjunctive redundancy), safety margins → A_commit, structural-weight
+  decomposition, and reconfiguration sustainability.
+
+slacheck sources the topology from live Datadog (see `datadog_api_catalog.md`) and presents the
+result as a Datadog dashboard.
+
+---
+
+## Part A — paper-v1 (frozen baseline)
 
 | Paper concept | Section | Code |
 |---|---|---|
@@ -16,23 +29,47 @@ hand-written YAML topology; slacheck sources the same structure from live Datado
 | **Descending** decomposition → per-component thresholds | §IV.C | `envelope/decompose.py` |
 | — uniform distribution (known limitation, 3 missed faults) | §VI | documented in `decompose.py` docstring |
 | Over-commitment fault (ascending + descending) | §IV.B/C, §I (C1) | `envelope/faults.py` |
-| Sustainability under reconfiguration (state machines, KB) | §IV.D | **out of scope for PoC** — data noted in catalog §4 |
-| Tool input (YAML schema) | §V | `fixtures/scenarios/paper_example.yaml` (kept as the regression scenario) |
-| Tool output (envelope, thresholds, faults) | §V | `models.Verdict`, rendered by `cli.py` and `dashboard/builder.py` |
+| Tool input (YAML schema) | §V | `fixtures/scenarios/paper_example.yaml` |
+| Tool output (envelope, thresholds, faults) | §V | `models.Verdict`, `cli.py`, `dashboard/builder.py` |
 
-## Worked example (the regression contract, §II.B + §V)
+### v1 worked example (regression contract, §II.B + §V)
+Three components UI/Auth/Stor, each 99.9% availability → envelope `100 − 3×0.1 = 99.7%`; target
+99.999% → ascending fault; cost 23 ÷ 3 ≈ 7.67 per component. (`tests/test_operators.py`,
+`tests/test_aggregate.py`, `tests/test_faults.py`, `tests/test_decompose.py`.)
 
-Three components UI/Auth/Stor, each 99.9% availability:
-- envelope availability `= 100 − 3×(100 − 99.9) = 99.7%`.
-- architect's target 99.999% > 99.7% → **ascending availability fault** (the paper's headline result).
-- Auth latency 14 ms; global target 18 ms.
-- cost 23 EUR/h ÷ 3 ≈ 7.67 EUR/h per component (descending).
+---
 
-Encoded in `tests/test_operators.py` and `tests/test_faults.py`.
+## Part B — paper-v2 (new contributions)
 
-## Extensions beyond the paper (the internship contribution)
+| Paper-v2 concept | Section | Code |
+|---|---|---|
+| Typed DAG, τ(e) ∈ {conjunctive, disjunctive} | §IV.B | `models.DependencyGraph` / `DependencyEdge`; `graph/typed_graph.py` |
+| Topological aggregation over the whole DAG | §IV.C | `envelope/v2/aggregate_v2.py` |
+| — conjunctive availability `100 − Σ(100−vᵢ)` (= v1) | §IV.C | `operators_v2.agg_availability_conjunctive` |
+| — **disjunctive availability `100 − Π((100−vᵢ)/100)`** (redundancy improves it) | §IV.C | `operators_v2.agg_availability_disjunctive` |
+| — latency `max` over root-to-leaf paths / `min` branch | §IV.C | `operators_v2.agg_latency_*` |
+| Safety margin γ = max(γ_tier, k·σ); ṽ = v − γ; A_commit | §IV.C | `envelope/v2/margins.py`, `aggregate_v2.compute_commit_envelope_v2` |
+| Structural-weight decomposition wᵢ = (1+deg⁻)/Σ(1+deg⁻) | §IV.D | `envelope/v2/decompose_v2.py` |
+| Reconfiguration sustainability (state machines + KB) | §IV.E | `envelope/v2/reconfig.py`; `models.ReconfigStrategy`/`KnowledgeBase` |
+| Tool input (typed-edge YAML + margins + strategies) | §V | `fixtures/scenarios/paper_example_v2.yaml` |
+| Evaluation Table I (10 / 60 / 43) | §VI | `src/slacheck/eval/runner.py`, `fixtures/eval/`, `slacheck eval` |
+| Version dispatch | — | `envelope/dispatch.py`, `pipeline.analyze(paper_version=…)`, `--paper-version` |
+
+### v2 worked numbers (proven in tests)
+- conjunctive availability of three 99.9% = **99.7%** (== v1); disjunctive of two 99.9% = **99.9999%**.
+- running case in-degrees → weights **wUI=1/5, wAuth=wStor=2/5**; cost T=23 → **sUI=4.6,
+  sAuth=sStor=9.2** (vs uniform 7.67).
+- margins (tier2=0.01, tier3=0.05) → **A_commit 99.59% < A\* 99.7%**; 99.999% target faults vs A_commit.
+- **Table I**: v2 = 10/10, 60/60, 43/43; v1 = 10/10, **57/60**, 0/43 — the 3 v1 misses are exactly the
+  heterogeneous-consumption `sub_gap` cases, closed by weighted decomposition.
+  (`tests/test_operators_v2.py`, `test_decompose_v2.py`, `test_margins_v2.py`, `test_eval_table1.py`.)
+
+---
+
+## Extensions beyond both papers (the internship engineering contribution)
 
 1. **Live topology** from Datadog APM instead of hand-written YAML.
-2. **Critical-path extraction** to answer a *specific* user constraint on a real branching DAG
-   (the paper only has a 3-node series example).
-3. **Datadog dashboard** as the output surface (the paper just prints to stdout).
+2. **Critical-path extraction** (v1) / **typed-DAG projection** (v2) on a real branching topology.
+3. **Datadog dashboard** as the output surface (the papers just print to stdout).
+4. **Kubernetes resource enrichment** (CPU/mem/restarts per service) — a live signal available even
+   when APM tracing is not.

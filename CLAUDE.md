@@ -9,6 +9,13 @@ topology**, extracts a **critical path** answering a user's SLA constraint, dete
 **over-commitment faults**, and publishes a **Datadog dashboard**. It implements and extends the
 ISSRE 2026 paper *"What SLA Can I Commit To?"*. Paper→code mapping: `docs/paper_mapping.md`.
 
+**Two paper versions coexist, selectable via `--paper-version v1|v2` (default v1):** v1 (series,
+uniform decomposition) is the **frozen regression contract** — never change v1 code/tests; v2 adds
+the typed DAG (conjunctive/disjunctive), topology-sensitive operators, safety margins → A_commit,
+structural-weight decomposition, and reconfiguration faults (`src/slacheck/envelope/v2/`, kept pure
+on the `models.DependencyGraph` abstraction). `slacheck eval --both` reproduces the paper's Table I
+(v1 57/60 vs v2 60/60 Sub-SLO).
+
 ## Architecture rule (do not break)
 
 **Layered, dependency-inverted.** The math core is pure; Datadog is an I/O adapter at the edge.
