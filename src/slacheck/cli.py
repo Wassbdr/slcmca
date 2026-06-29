@@ -230,6 +230,22 @@ def doctor() -> None:
         raise typer.Exit(code=1)
 
 
+@app.command(name="eval")
+def eval_cmd(
+    dataset: Path = typer.Option(_REPO_ROOT / "fixtures" / "eval", help="Eval dataset dir."),
+    paper_version: str = typer.Option("v2", "--paper-version", help="v1 | v2"),
+    both: bool = typer.Option(False, help="Show v1 and v2 side by side."),
+) -> None:
+    """Reproduce the paper's fault-detection Table I for v1 and/or v2."""
+    from slacheck.eval.runner import format_table, run_eval
+
+    versions = ["v1", "v2"] if both else [paper_version]
+    for ver in versions:
+        report = run_eval(dataset, ver)  # type: ignore[arg-type]
+        typer.echo(format_table(report, ver))
+        typer.echo("")
+
+
 @app.command()
 def catalog() -> None:
     """Where to read what Datadog exposes for slacheck."""

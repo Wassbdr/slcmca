@@ -1,0 +1,30 @@
+# Auto-generated evaluation scenario (paper Table I). See scripts/gen_eval.py.
+entrypoint: svc
+components:
+- name: svc
+  slo:
+    availability_pct: 99.9
+edges: []
+knowledge_base:
+  translation_rules:
+  - slo_metric: throughput
+    operational_metric: cpu_pct
+    operational_op: le
+    operational_value: 80.0
+reconfig_strategies:
+- name: autoscale_10
+  component: svc
+  states:
+  - name: a
+  - name: b
+  transitions:
+  - from_state: a
+    to_state: b
+    trigger_metric: cpu_pct
+    trigger_op: gt
+    trigger_value: 85.0
+target_slos:
+- throughput
+expected:
+  category: reconfig
+  metric: reconfiguration
