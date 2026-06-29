@@ -51,6 +51,8 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.ruff.lint.per-file-ignores]
 # typer's API intentionally calls Option()/Argument() in parameter defaults.
 "src/slacheck/cli.py" = ["B008"]
+# the eval generator inserts src/ on sys.path before importing slacheck (E402 intentional).
+"scripts/gen_eval.py" = ["E402"]
 
 [tool.mypy]
 python_version = "3.10"

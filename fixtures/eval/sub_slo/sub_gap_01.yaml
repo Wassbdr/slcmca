@@ -40,4 +40,6 @@ global_target:
 expected:
   category: sub_slo
   metric: cost
+  direction: descending
+  component: auth
 _note: 'heterogeneous-consumption gap: uniform misses, weighted (v2) catches'

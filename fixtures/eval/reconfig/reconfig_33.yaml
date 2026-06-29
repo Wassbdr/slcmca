@@ -23,8 +23,10 @@ reconfig_strategies:
     trigger_metric: cpu_pct
     trigger_op: gt
     trigger_value: 88.0
+    action: scale_up
 target_slos:
 - throughput
 expected:
   category: reconfig
   metric: reconfiguration
+  component: svc

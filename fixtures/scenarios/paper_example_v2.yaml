@@ -35,13 +35,13 @@ knowledge_base:
   translation_rules:
     - { slo_metric: throughput, operational_metric: cpu_pct, operational_op: le, operational_value: 80.0 }
 
-# A faulty strategy: it triggers a scale-DOWN at cpu<30, which can leave cpu>80 under load,
-# contradicting the throughput SLO requirement (cpu <= 80).
+# A faulty strategy: it triggers a scale-DOWN at cpu<85, which can fire while cpu is already
+# above the SLO bound (cpu<=80) — removing capacity then drives cpu further past 80.
 reconfig_strategies:
   - name: autoscale-stor
     component: Stor
     states: [{ name: steady }, { name: scaled }]
     transitions:
-      - { from_state: scaled, to_state: steady, trigger_metric: cpu_pct, trigger_op: gt, trigger_value: 90.0 }
+      - { from_state: scaled, to_state: steady, trigger_metric: cpu_pct, trigger_op: lt, trigger_value: 85.0, action: scale_down }
 
 target_slos: [throughput]

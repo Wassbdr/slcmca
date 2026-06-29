@@ -77,9 +77,16 @@ def _v1_series(graph: DependencyGraph) -> list[Component]:
 
 
 def _detect(scenario: dict, paper_version: PaperVersion) -> bool:
-    """Run the engine and return whether the expected fault category was detected."""
+    """Run the engine and report whether the SPECIFIC injected fault was detected.
+
+    Matches on the expected ``metric`` and, when given, the exact ``component`` and
+    ``direction`` — so a fault on a different component (or direction) does NOT count as a
+    detection. This is what makes the v1 57/60 vs v2 60/60 result meaningful.
+    """
     exp = scenario["expected"]
     metric = exp.get("metric")
+    component = exp.get("component")
+    direction = exp.get("direction")
     category = exp["category"]
 
     if paper_version == "v1":
@@ -96,7 +103,16 @@ def _detect(scenario: dict, paper_version: PaperVersion) -> bool:
             scenario["target_slos"],
         )
 
-    return any(f.metric == metric for f in verdict.faults) if metric else bool(verdict.faults)
+    def matches(f) -> bool:
+        if metric is not None and f.metric != metric:
+            return False
+        if component is not None and f.component != component:
+            return False
+        if direction is not None and f.direction != direction:
+            return False
+        return True
+
+    return any(matches(f) for f in verdict.faults)
 
 
 def run_eval(dataset_dir: Path, paper_version: PaperVersion) -> EvalReport:

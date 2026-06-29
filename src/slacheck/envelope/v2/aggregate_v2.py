@@ -82,42 +82,33 @@ def _edge_type(edges: list[DependencyEdge], source: str, target: str) -> str:
 
 
 def _path_latency(graph: DependencyGraph) -> float | None:
-    """Max over root-to-leaf path latency sums; disjunctive sibling branches take the min."""
-    latencies = {
-        n: c.slo.response_time_ms for n, c in graph.components.items()
-    }
+    """End-to-end latency, propagated bottom-up (paper-v2 §IV.C).
+
+    Each node's effective latency = its own value + the combined latency of its providers:
+    the worst (max) over conjunctive children (all must respond), and the responding (min)
+    branch over a disjunctive child-group (only one must respond). This mirrors the
+    availability propagation and makes ``agg_latency_disjunctive`` actually bind.
+    """
+    latencies = {n: c.slo.response_time_ms for n, c in graph.components.items()}
     if all(v is None for v in latencies.values()):
         return None
 
-    # Sum latency along each enumerated root-to-leaf path (skipping None contributions).
-    path_sums: list[float] = []
-    for path in graph.root_to_leaf_paths():
-        path_sums.append(sum(latencies[n] or 0.0 for n in path))
+    eff: dict[str, float] = {}
+    for node in reversed(graph.topological_order()):
+        own = latencies[node] or 0.0
+        conj: list[float] = []
+        disj: list[float] = []
+        for child in graph.successors(node):
+            etype = _edge_type(graph.edges, node, child)
+            (disj if etype == "disjunctive" else conj).append(eff[child])
 
-    # Disjunctive fan-outs: among sibling branches sharing a disjunctive parent edge, only
-    # the responding branch counts → for those we keep the min, otherwise the max overall.
-    # We approximate the mixed case by: max over conjunctive-dominated paths, but if a
-    # parent has ALL-disjunctive children, those branches compete (min). Detect such groups.
-    disj_mins = _disjunctive_branch_mins(graph, latencies)
-    candidates = path_sums + disj_mins
-    return agg_latency_conjunctive_paths(candidates) if candidates else None
+        downstream: list[float] = list(conj)
+        if disj:
+            downstream.append(agg_latency_disjunctive(disj))
+        # conjunctive children compose as the worst branch (the critical path through them)
+        eff[node] = own + (agg_latency_conjunctive_paths(downstream) if downstream else 0.0)
 
-
-def _disjunctive_branch_mins(
-    graph: DependencyGraph, latencies: dict[str, float | None]
-) -> list[float]:
-    """For each node whose children are disjunctive, the group contributes min branch."""
-    mins: list[float] = []
-    for node in graph.components:
-        children = graph.successors(node)
-        if len(children) < 2:
-            continue
-        types = {_edge_type(graph.edges, node, c) for c in children}
-        if types == {"disjunctive"}:
-            branch_vals = [latencies[c] or 0.0 for c in children]
-            prefix = latencies[node] or 0.0
-            mins.append(prefix + agg_latency_disjunctive(branch_vals))
-    return mins
+    return eff.get(graph.entrypoint)
 
 
 def compute_envelope_v2(graph: DependencyGraph) -> Envelope:

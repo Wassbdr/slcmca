@@ -3,22 +3,18 @@ entrypoint: ui
 components:
 - name: ui
   slo:
-    cost_eur_h: 3.0
-- name: svc
-  slo:
-    cost_eur_h: 3.0
+    cost_eur_h: 1.0
 - name: big
   slo:
-    cost_eur_h: 15.0
+    cost_eur_h: 22.67
 edges:
-- source: ui
-  target: svc
-  edge_type: conjunctive
 - source: ui
   target: big
   edge_type: conjunctive
 global_target:
-  cost_eur_h: 30.0
+  cost_eur_h: 28.0
 expected:
   category: sub_slo
   metric: cost
+  direction: descending
+  component: big

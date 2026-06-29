@@ -185,14 +185,23 @@ class ReconfigState(BaseModel):
     name: str
 
 
+ScaleAction = Literal["scale_up", "scale_down", "none"]
+
+
 class ReconfigTransition(BaseModel):
-    """A state-machine transition fired when ``trigger_metric trigger_op trigger_value``."""
+    """A state-machine transition fired when ``trigger_metric trigger_op trigger_value``.
+
+    ``action`` is the reconfiguration it applies: ``scale_up`` adds capacity (lowers the
+    operational metric, protective), ``scale_down`` removes capacity (raises it, risky near
+    a bound). Used by the sustainability check (paper-v2 §IV.E).
+    """
 
     from_state: str
     to_state: str
     trigger_metric: str  # operational metric, e.g. "cpu_pct"
     trigger_op: CompareOp
     trigger_value: float
+    action: ScaleAction = "none"
 
 
 class ReconfigStrategy(BaseModel):

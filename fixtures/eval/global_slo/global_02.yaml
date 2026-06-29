@@ -28,3 +28,5 @@ global_target:
 expected:
   category: global_slo
   metric: availability
+  direction: ascending
+  component: null
