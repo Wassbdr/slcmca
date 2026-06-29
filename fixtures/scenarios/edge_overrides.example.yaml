@@ -1,0 +1,15 @@
+# Optional paper-v2 edge-type overrides for LIVE Datadog topology.
+# Datadog APM call edges carry no AND/OR semantics, so slacheck defaults EVERY edge to
+# conjunctive. Use this file to mark redundant provider groups as disjunctive (OR), which
+# lets the v2 product operator credit redundancy:
+#   slacheck analyze --paper-version v2 --source live -e ts-gateway-service \
+#     --edge-overrides fixtures/scenarios/edge_overrides.example.yaml
+
+# Mark a parent's listed children as disjunctive (redundant alternatives).
+disjunctive_groups:
+  - parent: ts-travel-service
+    children: [ts-route-service, ts-route-plan-service]   # example: redundant routing
+
+# Or override individual edges explicitly.
+edge_types:
+  - { source: ts-gateway-service, target: ts-order-service, edge_type: conjunctive }

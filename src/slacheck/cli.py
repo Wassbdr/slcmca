@@ -58,11 +58,24 @@ def _render(result: AnalysisResult) -> None:
     env = v.envelope
     typer.echo(f"\nEntrypoint : {result.entrypoint}")
     typer.echo(f"Constraint : {result.constraint}")
-    typer.echo(f"Critical path : {' -> '.join(env.path)}")
-    typer.echo("\nAchievable envelope:")
+    typer.echo(f"Paper version : {result.paper_version}")
+    label = "Topological order" if result.paper_version == "v2" else "Critical path"
+    typer.echo(f"{label} : {' -> '.join(env.path)}")
+    typer.echo("\nAchievable envelope (A*):")
     typer.echo(f"  latency      : {env.response_time_ms!r} ms")
     typer.echo(f"  availability : {env.availability_pct!r} %")
     typer.echo(f"  cost         : {env.cost_eur_h!r} EUR/h")
+
+    if v.commit_envelope is not None:
+        ce = v.commit_envelope
+        typer.echo("\nSafely committable envelope (A_commit, after γ margins):")
+        typer.echo(f"  latency      : {ce.response_time_ms!r} ms")
+        typer.echo(f"  availability : {ce.availability_pct!r} %")
+        typer.echo(f"  cost         : {ce.cost_eur_h!r} EUR/h")
+    if v.weights:
+        typer.echo("\nStructural weights (wᵢ):")
+        for name, w in v.weights.items():
+            typer.echo(f"  {name}: {w:.4f}")
 
     if v.faults:
         typer.secho(f"\nOVER-COMMITMENT FAULTS ({len(v.faults)}):", fg=typer.colors.RED, bold=True)
@@ -82,19 +95,31 @@ def analyze_cmd(
     entrypoint: str = typer.Option(..., "--entrypoint", "-e", help="Entrypoint service."),
     constraint: str = typer.Option("latency", "--constraint", "-c", help="latency | availability"),
     source: str = typer.Option("fixture", "--source", help="fixture | live"),
+    paper_version: str = typer.Option("v1", "--paper-version", help="v1 | v2"),
     sink: str | None = typer.Option(None, "--sink", help="Optional target/sink service."),
     max_latency_ms: float | None = typer.Option(None, help="Global target: max latency (ms)."),
     min_availability_pct: float | None = typer.Option(None, help="Global target: min avail (%)."),
     max_cost_eur_h: float | None = typer.Option(None, help="Global target: max cost (EUR/h)."),
     cost_overrides: Path | None = typer.Option(None, help="YAML of per-service EUR/h."),
+    edge_overrides: Path | None = typer.Option(None, help="YAML of disjunctive groups (v2)."),
+    knowledge_base: Path | None = typer.Option(None, help="YAML knowledge base / margins (v2)."),
 ) -> None:
     """Run the pipeline and print the envelope and any faults."""
     src = get_source(source)  # type: ignore[arg-type]
     target = _build_target(max_latency_ms, min_availability_pct, max_cost_eur_h)
-    result = analyze(src, entrypoint, constraint, target=target, sink=sink)  # type: ignore[arg-type]
+    edges = yaml.safe_load(edge_overrides.read_text()) if edge_overrides else None
+    kb = None
+    if knowledge_base is not None:
+        from slacheck.models import KnowledgeBase
+
+        kb = KnowledgeBase(**yaml.safe_load(knowledge_base.read_text()))
+    result = analyze(
+        src, entrypoint, constraint, target=target, sink=sink,  # type: ignore[arg-type]
+        paper_version=paper_version, edge_overrides=edges, kb=kb,  # type: ignore[arg-type]
+    )
     _apply_cost_overrides(result, cost_overrides)
-    if cost_overrides is not None:
-        # re-evaluate now that costs are present
+    if cost_overrides is not None and paper_version == "v1":
+        # re-evaluate now that costs are present (v1 path only)
         from slacheck.envelope.faults import evaluate
 
         result.verdict = evaluate(result.path, target)
