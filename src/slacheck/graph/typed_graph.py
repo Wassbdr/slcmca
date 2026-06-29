@@ -26,6 +26,12 @@ def project_to_dependency_graph(
         edge_types:
           - { source: <svc>, target: <svc>, edge_type: conjunctive|disjunctive }
     """
+    if g.number_of_nodes() == 0:
+        raise ValueError(
+            "no services found in the topology (empty graph). If using --source live, the "
+            "APM service map is empty or unreachable — run `slacheck doctor` to check access."
+        )
+
     overrides = edge_overrides or {}
     disjunctive: set[tuple[str, str]] = set()
     for grp in overrides.get("disjunctive_groups", []) or []:
@@ -37,15 +43,32 @@ def project_to_dependency_graph(
         for e in overrides.get("edge_types", []) or []
     }
 
-    components: dict[str, Component] = {
-        n: g.nodes[n]["component"] for n in g.nodes
-    }
+    components: dict[str, Component] = {}
+    for n in g.nodes:
+        attrs = g.nodes[n]
+        if "component" not in attrs:
+            raise ValueError(f"graph node {n!r} has no 'component' attribute")
+        components[n] = attrs["component"]
+
     edges: list[DependencyEdge] = []
+    incoming_types: dict[str, set[EdgeType]] = {}
     for u, v in g.edges:
         etype: EdgeType = explicit.get(
             (u, v), "disjunctive" if (u, v) in disjunctive else "conjunctive"
         )
         edges.append(DependencyEdge(source=u, target=v, edge_type=etype))
+        incoming_types.setdefault(v, set()).add(etype)
+
+    # Pre-flight: surface a misconfigured override clearly rather than letting the pydantic
+    # validator raise mid-pipeline (a callee reached via both a disjunctive group and a
+    # default-conjunctive caller would have mixed incoming types).
+    for svc, types in incoming_types.items():
+        if len(types) > 1:
+            raise ValueError(
+                f"service {svc!r} would receive mixed dependency types {sorted(types)} after "
+                "applying edge_overrides; mark all its incoming edges as a single type "
+                "(conjunctive or disjunctive) in edge_overrides.edge_types."
+            )
 
     return DependencyGraph(components=components, edges=edges, entrypoint=entrypoint)
 

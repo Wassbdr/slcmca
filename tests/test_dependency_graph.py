@@ -41,14 +41,32 @@ def test_root_to_leaf_paths(ui_auth_stor):
     assert len(paths) == 2
 
 
-def test_cycle_raises():
-    g = DependencyGraph(
-        components={n: _comp(n) for n in ("a", "b")},
-        edges=[DependencyEdge(source="a", target="b"), DependencyEdge(source="b", target="a")],
-        entrypoint="a",
-    )
+def test_cycle_rejected_at_construction():
+    # acyclicity is validated eagerly so traversal (root_to_leaf_paths) can't infinite-loop
     with pytest.raises(ValueError):
-        g.topological_order()
+        DependencyGraph(
+            components={n: _comp(n) for n in ("a", "b")},
+            edges=[DependencyEdge(source="a", target="b"), DependencyEdge(source="b", target="a")],
+            entrypoint="a",
+        )
+
+
+def test_invalid_entrypoint_rejected():
+    with pytest.raises(ValueError):
+        DependencyGraph(
+            components={"Auth": _comp("Auth")},
+            edges=[],
+            entrypoint="UI",  # not in components
+        )
+
+
+def test_dangling_edge_rejected():
+    with pytest.raises(ValueError):
+        DependencyGraph(
+            components={"UI": _comp("UI")},
+            edges=[DependencyEdge(source="UI", target="Missing")],  # Missing not a component
+            entrypoint="UI",
+        )
 
 
 def test_mixed_incoming_edge_types_rejected():

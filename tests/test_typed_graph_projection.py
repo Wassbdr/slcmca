@@ -16,6 +16,32 @@ def _g():
     return g
 
 
+def test_empty_graph_clear_error():
+    with pytest.raises(ValueError, match="no services found"):
+        project_to_dependency_graph(nx.DiGraph(), "UI")
+
+
+def test_missing_component_attr_clear_error():
+    g = nx.DiGraph()
+    g.add_node("UI", component=Component(name="UI", slo=SloValues()))
+    g.add_node("Auth")  # no component attribute
+    g.add_edge("UI", "Auth")
+    with pytest.raises(ValueError, match="no 'component' attribute"):
+        project_to_dependency_graph(g, "UI")
+
+
+def test_mixed_override_preflight_error():
+    # StorB is reached by UI (disjunctive group) AND by Other (default conjunctive) -> mixed.
+    g = nx.DiGraph()
+    for n in ("UI", "Other", "StorB"):
+        g.add_node(n, component=Component(name=n, slo=SloValues(availability_pct=99.9)))
+    g.add_edge("UI", "StorB")
+    g.add_edge("Other", "StorB")
+    overrides = {"disjunctive_groups": [{"parent": "UI", "children": ["StorB"]}]}
+    with pytest.raises(ValueError, match="mixed dependency types"):
+        project_to_dependency_graph(g, "UI", overrides)
+
+
 def test_default_edges_are_conjunctive():
     dep = project_to_dependency_graph(_g(), "UI")
     assert all(e.edge_type == "conjunctive" for e in dep.edges)

@@ -112,7 +112,16 @@ class DependencyGraph(BaseModel):
     entrypoint: str
 
     def model_post_init(self, __context: object) -> None:
-        # A node's incoming edges must agree on a single type (the fan-in combines one way).
+        # 1) every edge must reference known components (no dangling endpoints).
+        for e in self.edges:
+            if e.source not in self.components:
+                raise ValueError(f"edge source {e.source!r} is not a component")
+            if e.target not in self.components:
+                raise ValueError(f"edge target {e.target!r} is not a component")
+        # 2) the entrypoint must exist.
+        if self.components and self.entrypoint not in self.components:
+            raise ValueError(f"entrypoint {self.entrypoint!r} is not a component")
+        # 3) a node's incoming edges must agree on a single type (the fan-in combines one way).
         by_target: dict[str, set[str]] = {}
         for e in self.edges:
             by_target.setdefault(e.target, set()).add(e.edge_type)
@@ -122,6 +131,9 @@ class DependencyGraph(BaseModel):
                     f"node {target!r} has mixed incoming edge types {sorted(types)}; "
                     "a fan-in group must be all conjunctive or all disjunctive"
                 )
+        # 4) acyclicity — validated eagerly so traversals can't infinite-loop later.
+        if self.components:
+            self.topological_order()  # raises ValueError on a cycle
 
     def indegree(self, name: str) -> int:
         return sum(1 for e in self.edges if e.target == name)
@@ -140,37 +152,44 @@ class DependencyGraph(BaseModel):
         return "conjunctive"
 
     def topological_order(self) -> list[str]:
-        """Kahn's algorithm. Raises ``ValueError`` on a cycle."""
+        """Kahn's algorithm (deterministic). Raises ``ValueError`` on a cycle."""
+        import bisect
+
         indeg = {n: 0 for n in self.components}
+        adj: dict[str, list[str]] = {n: [] for n in self.components}
         for e in self.edges:
-            indeg[e.target] = indeg.get(e.target, 0) + 1
-        queue = sorted(n for n, d in indeg.items() if d == 0)
+            indeg[e.target] += 1
+            adj[e.source].append(e.target)
+        # ready = nodes with indegree 0, kept sorted via bisect (no per-iteration full sort).
+        ready = sorted(n for n, d in indeg.items() if d == 0)
         order: list[str] = []
-        while queue:
-            n = queue.pop(0)
+        while ready:
+            n = ready.pop(0)
             order.append(n)
-            for succ in sorted(self.successors(n)):
+            for succ in adj[n]:
                 indeg[succ] -= 1
                 if indeg[succ] == 0:
-                    queue.append(succ)
-            queue.sort()
+                    bisect.insort(ready, succ)
         if len(order) != len(self.components):
             raise ValueError("DependencyGraph is not acyclic")
         return order
 
     def root_to_leaf_paths(self) -> list[list[str]]:
-        """All paths from the entrypoint down to leaf nodes (DFS over successors)."""
+        """All paths from the entrypoint to leaf nodes (DFS). The graph is acyclic (validated
+        at construction); a defensive on-stack guard prevents runaway recursion regardless."""
         paths: list[list[str]] = []
 
-        def dfs(node: str, acc: list[str]) -> None:
+        def dfs(node: str, acc: list[str], on_stack: frozenset[str]) -> None:
             succs = self.successors(node)
             if not succs:
                 paths.append(acc)
                 return
             for s in succs:
-                dfs(s, [*acc, s])
+                if s in on_stack:  # belt-and-suspenders; construction already forbids cycles
+                    continue
+                dfs(s, [*acc, s], on_stack | {s})
 
-        dfs(self.entrypoint, [self.entrypoint])
+        dfs(self.entrypoint, [self.entrypoint], frozenset({self.entrypoint}))
         return paths
 
 
