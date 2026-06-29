@@ -18,10 +18,17 @@ def agg_cost_v2(values: Sequence[float]) -> float:
     return sum(values)
 
 
+def _check_availability(values: Sequence[float]) -> None:
+    for v in values:
+        if not 0.0 <= v <= 100.0:
+            raise ValueError(f"availability must be in [0, 100], got {v}")
+
+
 def agg_availability_conjunctive(values: Sequence[float]) -> float:
     """Conjunctive: 100 − Σ(100 − vᵢ). Identical to paper-v1 error-budget composition."""
     if not values:
         raise ValueError("agg_availability_conjunctive requires at least one value")
+    _check_availability(values)
     return 100.0 - sum(100.0 - v for v in values)
 
 
@@ -30,6 +37,7 @@ def agg_availability_disjunctive(values: Sequence[float]) -> float:
     so combined unavailability is the product of individual unavailabilities."""
     if not values:
         raise ValueError("agg_availability_disjunctive requires at least one value")
+    _check_availability(values)
     unavail_product = math.prod((100.0 - v) / 100.0 for v in values)
     return 100.0 - unavail_product * 100.0
 

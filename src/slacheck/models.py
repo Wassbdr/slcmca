@@ -56,12 +56,15 @@ class ResourceMetrics(BaseModel):
 class CspProfile(BaseModel):
     """CSP reliability properties used to derive the paper-v2 safety margin γ (§IV.C).
 
-    ``tier`` selects the conservative tier-floor; ``sigma`` is the empirical stddev of
-    delivered performance (0 when no historical data → margin falls back to the floor).
+    ``tier`` selects the conservative tier-floor (in availability points). ``sigma`` is the
+    empirical stddev of delivered **availability** (0 → margin falls back to the floor).
+    Latency/cost have their own stddevs (default 0) so margins are never mixed across units.
     """
 
     tier: CspTier
-    sigma: float = 0.0
+    sigma: float = 0.0  # availability stddev (percentage points)
+    sigma_latency_ms: float = 0.0
+    sigma_cost: float = 0.0
 
 
 class Component(BaseModel):

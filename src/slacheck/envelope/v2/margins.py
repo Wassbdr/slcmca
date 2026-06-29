@@ -12,11 +12,21 @@ from slacheck.models import CspProfile, MarginConfig, Metric, SloValues
 
 
 def gamma(profile: CspProfile | None, config: MarginConfig, metric: Metric) -> float:
-    """γ = max(tier_floor, k·σ). Returns 0 when no profile (no margin information)."""
+    """γ for a given metric = max(tier_floor, k·σ), per-metric so units never mix.
+
+    The CSP tier classification grounds an **availability** floor (percentage points);
+    latency and cost have no tier floor and use only their own stddev (k·σ), defaulting to
+    0 when unspecified. Returns 0 without a profile.
+    """
     if profile is None:
         return 0.0
-    tier_floor = config.tier_floor.get(profile.tier, 0.0)
-    return max(tier_floor, config.k * profile.sigma)
+    if metric == "availability":
+        return max(config.tier_floor.get(profile.tier, 0.0), config.k * profile.sigma)
+    if metric == "response_time":
+        return config.k * profile.sigma_latency_ms
+    if metric == "cost":
+        return config.k * profile.sigma_cost
+    return 0.0
 
 
 def adjust_slo(slo: SloValues, profile: CspProfile | None, config: MarginConfig) -> SloValues:

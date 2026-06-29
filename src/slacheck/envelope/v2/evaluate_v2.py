@@ -53,8 +53,11 @@ def evaluate_v2(
     faults = []
     thresholds = []
     if target is not None:
-        # ascending fault is judged against the margin-adjusted A_commit, not A*.
+        # Ascending fault is judged against the margin-adjusted A_commit, not A*.
         faults += detect_ascending(target, commit)
+        # Descending decomposes the RAW target T, per paper-v2 §IV.D: "the descending
+        # validation takes the target Global-SLO T fixed by the architect as input … both
+        # operate on the same input data". The two passes are deliberately independent.
         thresholds = decompose_v2(target, graph)
         faults += detect_descending(components, thresholds)
 

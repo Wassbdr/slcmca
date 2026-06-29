@@ -23,6 +23,23 @@ def test_gamma_zero_without_profile():
     assert gamma(None, MarginConfig(), "availability") == 0.0
 
 
+def test_gamma_is_per_metric_no_unit_mixing():
+    # the scalar tier_floor/sigma are AVAILABILITY margins (paper's metric). latency/cost get
+    # no margin unless their own sigma is supplied — avoids applying 0.05% as 0.05 ms / 0.05 EUR.
+    cfg = MarginConfig(k=2.0, tier_floor={"tier3": 0.05})
+    prof = CspProfile(tier="tier3", sigma=0.0)
+    assert gamma(prof, cfg, "availability") == pytest.approx(0.05)
+    assert gamma(prof, cfg, "response_time") == 0.0
+    assert gamma(prof, cfg, "cost") == 0.0
+
+
+def test_gamma_per_metric_sigma_applies():
+    cfg = MarginConfig(k=2.0, tier_floor={"tier3": 0.05})
+    prof = CspProfile(tier="tier3", sigma=0.0, sigma_latency_ms=1.5, sigma_cost=0.3)
+    assert gamma(prof, cfg, "response_time") == pytest.approx(3.0)  # k·σ_lat
+    assert gamma(prof, cfg, "cost") == pytest.approx(0.6)  # k·σ_cost
+
+
 def test_commit_envelope_below_theoretical(paper_scenario_v2):
     graph = paper_scenario_v2["graph"]
     kb = paper_scenario_v2["kb"]

@@ -40,3 +40,11 @@ def test_empty_inputs_raise():
         agg_availability_conjunctive([])
     with pytest.raises(ValueError):
         agg_availability_disjunctive([])
+
+
+def test_out_of_range_availability_rejected():
+    # garbage-in must not silently produce garbage-out (e.g. 150% availability)
+    with pytest.raises(ValueError):
+        agg_availability_disjunctive([99.9, 150.0])
+    with pytest.raises(ValueError):
+        agg_availability_conjunctive([-5.0])
