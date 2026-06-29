@@ -19,10 +19,15 @@ from typing import Any, Literal
 from slacheck.config import Settings
 
 # One grouped query per metric family; we parse the per-service series by scope tag.
+# The metric namespace is the APM "trace.<integration>.request" stat. For the Java/Spring
+# train-ticket app the integration is the servlet container, so the stat is
+# ``trace.servlet.request`` (its duration is the base metric, NOT a ``.duration`` suffix).
+# Other runtimes expose ``trace.http.request`` etc. — override DD_TRACE_STAT to switch.
+# p99 latency is returned in SECONDS by Datadog; metrics.py converts to ms.
 _QUERIES = {
-    "latency_p99": "p99:trace.http.request.duration{*} by {service}",
-    "error_count": "sum:trace.http.request.errors{*} by {service}.as_count()",
-    "request_count": "sum:trace.http.request.hits{*} by {service}.as_count()",
+    "latency_p99": "p99:trace.servlet.request{*} by {service}",
+    "error_count": "sum:trace.servlet.request.errors{*} by {service}.as_count()",
+    "request_count": "sum:trace.servlet.request.hits{*} by {service}.as_count()",
 }
 
 # Kubernetes resource metrics, grouped by kube_deployment (== service name for ts-*).
@@ -161,7 +166,23 @@ class LiveClient:
         return {"series": series}
 
     def metric_series(self, kind: Literal["latency_p99", "error_count", "request_count"]) -> dict:
-        return self._query(_QUERIES[kind])
+        series = self._query(_QUERIES[kind])
+        if kind == "latency_p99":
+            # Datadog returns trace duration in SECONDS; the model expects milliseconds
+            # (fixtures are already in ms — convert only here, at the live edge).
+            series = {
+                "series": [
+                    {
+                        "scope": s["scope"],
+                        "pointlist": [
+                            [t, (v * 1000.0 if v is not None else None)]
+                            for t, v in s["pointlist"]
+                        ],
+                    }
+                    for s in series["series"]
+                ]
+            }
+        return series
 
     def k8s_metric_series(self, kind: _K8sKind) -> dict:
         """Kubernetes resource metric grouped by kube_deployment, scoped to DD_K8S_NAMESPACE."""

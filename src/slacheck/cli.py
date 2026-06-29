@@ -149,9 +149,13 @@ def publish(
     entrypoint: str = typer.Option(..., "--entrypoint", "-e"),
     constraint: str = typer.Option("latency", "--constraint", "-c"),
     source: str = typer.Option("live", "--source"),
+    paper_version: str = typer.Option("v2", "--paper-version", help="v1 | v2"),
     sink: str | None = typer.Option(None, "--sink"),
     min_availability_pct: float | None = typer.Option(None),
     max_latency_ms: float | None = typer.Option(None),
+    pricing: Path | None = typer.Option(None, help="YAML cloud unit prices (k8s cost model)."),
+    service_prefix: str | None = typer.Option(None, help="Keep only services with this prefix."),
+    exclude_contains: str | None = typer.Option(None, help="Drop services whose name has this."),
     title: str | None = typer.Option(None, help="Dashboard title (idempotent key)."),
     dry_run: bool = typer.Option(False, help="Build the JSON but do not push."),
 ) -> None:
@@ -160,7 +164,22 @@ def publish(
 
     src = get_source(source)  # type: ignore[arg-type]
     target = _build_target(max_latency_ms, min_availability_pct, None)
-    result = analyze(src, entrypoint, constraint, target=target, sink=sink)  # type: ignore[arg-type]
+    svc_filter: dict | None = None
+    if service_prefix or exclude_contains:
+        svc_filter = {}
+        if service_prefix:
+            svc_filter["include_prefix"] = service_prefix
+        if exclude_contains:
+            svc_filter["exclude_contains"] = exclude_contains
+    price = None
+    if pricing is not None:
+        from slacheck.models import Pricing
+
+        price = Pricing(**yaml.safe_load(pricing.read_text()))
+    result = analyze(
+        src, entrypoint, constraint, target=target, sink=sink,  # type: ignore[arg-type]
+        paper_version=paper_version, pricing=price, service_filter=svc_filter,  # type: ignore[arg-type]
+    )
     dashboard = build_dashboard(result, title=title)
 
     if dry_run:

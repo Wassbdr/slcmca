@@ -12,9 +12,11 @@ from __future__ import annotations
 from slacheck.models import Verdict
 from slacheck.pipeline import AnalysisResult
 
-# trace metric templates — keep in sync with datadog/live_client.py and the catalog §2
-_LATENCY_Q = "p99:trace.http.request.duration{{service:{svc}}}"
-_ERRORS_Q = "sum:trace.http.request.errors{{service:{svc}}}.as_count()"
+# trace metric templates — keep in sync with datadog/live_client.py _QUERIES and the catalog §2.
+# The Java/Spring train-ticket app exposes the servlet stat ``trace.servlet.request`` (its
+# duration is the base metric, not a ``.duration`` suffix).
+_LATENCY_Q = "p99:trace.servlet.request{{service:{svc}}}"
+_ERRORS_Q = "sum:trace.servlet.request.errors{{service:{svc}}}.as_count()"
 # k8s resource templates — available without APM (catalog §4), keyed by kube_deployment
 _CPU_Q = "avg:kubernetes.cpu.usage.total{{kube_deployment:{svc}}}"
 _MEM_Q = "avg:kubernetes.memory.usage{{kube_deployment:{svc}}}"
