@@ -16,5 +16,22 @@ venv/
 .mypy_cache/
 .ruff_cache/
 
+# LaTeX build artifacts (sources are issre_paper.tex / conference_101719.tex / refs.bib)
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.fls
+*.fdb_latexmk
+issre_paper.pdf
+conference_101719.pdf
+
 # OS / editor
 .DS_Store
+
+# IEEEtran class/bst (third-party, from CTAN — not ours to vendor)
+IEEEtran.cls
+IEEEtran.bst

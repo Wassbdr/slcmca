@@ -1,0 +1,342 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\usetikzlibrary{positioning}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{What SLA Can I Commit To ? Computing Achievable Service-Level Objective for Multi-Cloud Applications}
+
+\author{\IEEEauthorblockN{1\textsuperscript{st} Given Name Surname}
+\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+\textit{name of organization (of Aff.)}\\
+City, Country \\
+email address or ORCID}
+\and
+\IEEEauthorblockN{2\textsuperscript{nd} Given Name Surname}
+\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+\textit{name of organization (of Aff.)}\\
+City, Country \\
+email address or ORCID}}
+
+\maketitle
+
+\begin{abstract}
+In multi-cloud applications, architects assemble services from multiple Cloud Service Providers (CSPs) and must contractually commit to a Service-Level Agreement (SLA) before deployment. Committing to a structurally untenable SLA introduces a latent dependability fault that inevitably leads to runtime violations. Because no single entity possesses complete visibility over the distributed context, accurately determining achievable commitments is challenging. The central question is: "What SLA can I safely commit to?" This paper proposes a pre-deployment validation methodology to compute the strictly guaranteeable SLA envelope of a multi-cloud composition and detect over-commitment faults. Our approach aggregates component-level Service-Level Objectives (SLOs) into achievable global metrics, decomposes global targets into per-component thresholds, and validates the sustainability of these commitments under reconfiguration strategies using operational translation. Implemented in a Python-based tool and evaluated on a dataset of 113 injected over-commitment faults, our approach detects all 113, whereas a baseline using series-only aggregation and uniform threshold distribution detects only 67. This gain isolates the contribution of three mechanisms---typed-DAG aggregation, structurally-weighted decomposition, and reconfiguration validation---and yields concrete lessons on why topology-aware decomposition is necessary.
+\end{abstract}
+
+\begin{IEEEkeywords}
+software reliability, dependability, multi-cloud, service-level agreement,
+fault prevention
+\end{IEEEkeywords}
+
+%==============================================================================
+\section{Introduction}\label{sec:intro}
+%==============================================================================
+
+As cloud computing matures, modern applications increasingly assemble services from multiple Cloud Service Providers (CSPs) to optimize costs, enhance resilience, and avoid vendor lock-in~\cite{flexera2024}. In this multi-cloud paradigm, an application provider acts as a broker: they consume individual cloud services while concurrently providing a unified composite application to end-users. Consequently, they must contractually commit to a Service-Level Agreement (SLA) with their users prior to deployment. 
+
+From a reliability perspective, an architect over-committing to an SLA introduces a latent dependability fault~\cite{avizienis2004dependability} directly into the system's contractual design. If the global commitment mathematically exceeds the combined capabilities of the underlying components, a violation becomes structurally inevitable regardless of the code quality. Because of the distributed nature of multi-cloud systems, maintaining and monitoring these objectives is highly complex. The central problem architects face is therefore: \textit{"What overarching SLA can I safely commit to for a given multi-cloud application?"}
+
+To address this, we propose a comprehensive methodology to evaluate SLA coherence before deployment. Our contributions are threefold:
+\begin{itemize}
+    \item \textbf{C1:} We formalize the concept of a \textit{guaranteeable SLA envelope} and define the \textit{over-commitment fault} as a structural defect in multi-cloud design.
+    \item \textbf{C2:} We introduce bidirectional validation algorithms: an ascending aggregation to compute achievable Global-SLOs, a descending decomposition to establish per-component thresholds, and an operational translation mechanism to verify sustainability under elasticity rules.
+    \item \textbf{C3:} We implement this approach in a dedicated tool, evaluate it against a representative multi-cloud system, and provide an honest assessment of its fault-detection capabilities and current limitations.
+\end{itemize}
+
+%==============================================================================
+\section{Background and Industrial Context}\label{sec:context}
+%==============================================================================
+
+\subsection{Multi-Cloud SLA Model}\label{sec:model}
+A multi-cloud SLA is a hierarchical contract composed of two levels: a Global-SLA representing the overarching commitments made to the end-users, and several Sub-SLAs representing the local guarantees provided by individual CSPs for each component. Each SLA bundles multiple Service-Level Objectives (SLOs), which define quantitative non-functional requirements such as availability, response time, and cost.
+
+Furthermore, maintaining these SLOs under fluctuating workloads requires dynamic elasticity. We capture this dynamism by associating Sub-SLAs with reconfiguration strategies. These strategies dictate how resources scale (e.g., adding or removing virtual machines) and are formally modeled as state machines consisting of states, transition-triggering events, and reconfiguration actions~\cite{mechouche2021reconfig}.
+
+\subsection{Running Case from Practice}\label{sec:case}
+To illustrate our approach, we adopt a motivating multi-cloud composite application. The system comprises three components: a User Interface (UI), an Authentication service (Auth), and a Storage service (Stor). These are hosted across three distinct providers: CSP1, CSP2, and CSP3. The UI component directly depends on Auth and Stor. 
+
+The architect aims to commit to a highly demanding Global-SLA for the end-users: a response time of 18ms or less, an availability of at least 99.999\%, and an operational cost strictly under 23 EUR/h. Concurrently, local Sub-SLAs are negotiated with the CSPs (e.g., the Auth component guarantees 14ms latency, 99.9\% availability, and costs 6 EUR/h). Our goal is to determine whether the 99.999\% global availability and 18ms latency targets are structurally viable.
+
+%==============================================================================
+\section{Related Work}\label{sec:related}
+%==============================================================================
+% Note : Conservé tel quel d'après ta validation précédente.
+
+\textbf{Multi-Cloud SLA Specification and Composition.} 
+Traditional SLA specification languages, such as WSLA and SLA*, were primarily designed for single-provider web services and lack native constructs to represent the hierarchical dependencies inherent to multi-cloud architectures. While some multi-cloud service composition approaches do consider SLAs for service selection (e.g., Farokhi et al., Taha et al.), they often assume flat or simplified SLA structures. They generally do not address the explicit mathematical relationship between a provider's local commitments (Sub-SLAs) and the overarching user-facing commitment (Global-SLA). 
+
+\textbf{SLA Aggregation Patterns.} 
+To reason about composite SLAs, it is necessary to define how individual Service-Level Objectives (SLOs) merge. Ul Haq and Schikuta laid foundational work in this area by defining aggregation patterns (e.g., \textit{SumType}, \textit{MaxType}, \textit{MinType}) for hierarchical SLAs. However, while these theoretical operators exist, the literature lacks their systematic application to compute a strictly guaranteeable global SLA envelope prior to deployment. Most frameworks treat these metrics passively rather than actively preventing over-commitment faults.
+
+\textbf{Pre-Deployment SLA Validation.} 
+Validating SLA coherence before implementation is crucial to prevent structural violations. Existing methods often frame this as a Constraint Satisfaction Problem (CSP). For instance, Müller et al. use CSP solvers to detect inconsistent functional and non-functional terms within a given SLA. Similarly, other tools validate basic constraints during service discovery. Yet, these approaches primarily focus on static compliance or service selection. They do not compute the bottom-up limits of a multi-cloud dependency graph, leaving architects without a clear, automated answer to the question: \textit{"What overarching SLA can I safely commit to?"}
+
+
+%==============================================================================
+\section{Computing the Guaranteeable SLA Envelope}\label{sec:approach}
+%==============================================================================
+
+\subsection{Dependencies as the Basis for Commitment}\label{sec:dep}
+In a composite system, any global metric is intrinsically constrained by the performance of its underlying parts. Consequently, Global-SLOs are strictly dependent on Sub-SLOs. For instance, a global availability target of 99.999\% cannot be achieved if it relies on a local sub-component guaranteed at only 99.9\%. Furthermore, dynamic reconfiguration strategies are tightly coupled with the Sub-SLOs they are designed to protect. A mismatch between an elasticity trigger and the protected SLO creates an architectural flaw that will inevitably lead to runtime violations.
+
+\subsection{Formalizing the Dependency Structure as a DAG}\label{sec:dag}
+
+The aggregation operators applicable to a given metric depend on the dependency structure of the multi-cloud composition. As illustrated in Section~\ref{sec:case}, a single architecture may combine conjunctive dependencies (e.g., the UI requires both Auth and Stor) and disjunctive ones (e.g., redundant storage providers); no global topology assumption can therefore be imposed. We model the composition as a Directed Acyclic Graph $G = (V, E)$, where each node $v \in V$ represents a component governed by a Sub-SLA, and each directed edge $e = (u, v) \in E$ represents a functional dependency of $u$ on $v$. Each edge carries a type $\tau(e) \in \{\mathit{conjunctive},\, \mathit{disjunctive}\}$:a \emph{conjunctive} dependency requires all providers to be operational for $u$ to function, corresponding to an AND-typed execution pattern~\cite{zeng2004qos}; a \emph{disjunctive} dependency requires at least one provider, corresponding to an OR-typed pattern. Real architectures are commonly mixed, and no global topology assumption is imposed. The acyclicity of $G$ guarantees that a topological sort exists, providing a well-defined propagation order in which each node is evaluated only after all its providers. The type $\tau(e)$ at each edge selects the applicable aggregation operator, as detailed in Section~\ref{sec:agg}. Figure~\ref{fig:metamodel} summarizes the meta-model.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    mc/.style={
+      rectangle, rounded corners=3pt,
+      draw=black, thick, fill=gray!10,
+      font=\small\bfseries,
+      text centered, minimum width=2.2cm, minimum height=0.60cm
+    },
+    atr/.style={
+      rectangle,
+      draw=black, thin, fill=white,
+      font=\scriptsize, text centered,
+      minimum width=2.2cm, minimum height=0.45cm
+    },
+    dg/.style={
+      rectangle, rounded corners=2pt,
+      draw=black!50, dashed, thin, fill=blue!5,
+      font=\small\itshape, align=center,
+      minimum width=2.0cm, minimum height=0.80cm
+    },
+    ar/.style={->, thick},
+    da/.style={->, thick, dashed, gray!55},
+    lb/.style={font=\scriptsize\itshape, fill=white, inner sep=1pt}
+  ]
+
+  %% Colonnes : gauche x=0, droite x=3.8
+  %% Rangées   : 0, -1.4, -2.8, -4.2, -5.5
+
+  \node[mc] (gsla) at (0.0,  0.0)  {Global-SLA};
+  \node[mc] (gslo) at (3.8,  0.0)  {Global-SLO};
+
+  \draw[gray!40, dashed, thin] (-1.0, -0.48) -- (4.8, -0.48);
+  \node[font=\scriptsize, text=gray] at (1.9, -0.36)
+        {\textit{component tier}};
+
+  \node[mc]  (comp) at (0.0, -1.40) {Component};
+  \node[mc]  (ssla) at (3.8, -1.40) {Sub-SLA};
+
+  \node[mc]  (csp)     at (0.0, -2.80) {CSP};
+  \node[mc]  (slo)     at (3.8, -2.80) {SLO};
+  \node[atr] (sloattr) at (3.8, -3.40) {metric, value, aggOp};
+
+  \node[dg]  (dag)   at (0.0, -4.50) {\{acyclic\}\\[2pt]$G=(V,E)$};
+  \node[mc]  (strat) at (3.8, -4.50) {Reconf.\ Strategy};
+
+  \node[mc]  (opm)   at (3.8, -5.70) {Op.\ Metric};
+
+  %% ── arêtes horizontales ──────────────────────────────────────────────────
+  \draw[ar] (gsla.east) -- node[lb, above]{\textit{bundles 1..*}}
+            (gslo.west);
+  \draw[ar] (comp.east) -- node[lb, above]{\textit{governed by 1}}
+            (ssla.west);
+
+  %% ── arêtes verticales colonne gauche ─────────────────────────────────────
+  \draw[ar] (comp.south) -- node[lb, right]{\textit{hosted by 1}}
+            (csp.north);
+
+  %% ── arêtes verticales colonne droite ─────────────────────────────────────
+  \draw[ar] (ssla.south) -- node[lb, right]{\textit{bundles 1..*}}
+            (slo.north);
+  \draw[ar] (sloattr.south) -- (strat.north);
+  \draw[ar] (strat.south) -- node[lb, right]{\textit{triggers on 1..*}}
+            (opm.north);
+
+  %% Sub-SLA ──references──► Reconf.Strategy (contour droit)
+  \draw[ar]
+    (ssla.east)
+    -- ++(0.50, 0.0)
+    -- ++(0.0, -3.10)
+    -- (strat.east)
+    node[lb, pos=0.55, right]{\textit{references 0..*}};
+
+  %% SLO ──aggregates to──► Global-SLO (contour droit, plus serré)
+  \draw[da]
+    (slo.east)
+    -- ++(0.50, 0.0)
+    -- ++(0.0,  2.80)
+    -- (gslo.east)
+    node[lb, pos=0.50, right]{\textit{aggregates to}};
+
+  %% Component ──depends on──► DAG (contour gauche)
+  \draw[ar]
+    (comp.west)
+    -- ++(-0.60, 0.0)
+    -- ++(0.0, -3.10)
+    -- (dag.west)
+    node[lb, pos=0.50, left]{\textit{depends on 0..*}};
+
+  %% DAG ──τ──► Component (horizontal, label au-dessus)
+  \draw[ar]
+    (dag.north)
+    -- ++(0.0, 0.50)
+    -- (comp.south |- {(0,-3.95)})
+    -- (comp.south)
+    node[lb, pos=0.25, right]
+      {$\tau\!\in\!\{\text{conj.},\text{disj.}\}$};
+
+\end{tikzpicture}
+\caption{Meta-model of multi-cloud SLA dependencies. The dashed line separates the global tier (Global-SLA, Global-SLO) from the component tier. The \textit{aggregates to} arrow (dashed) propagates Sub-SLOs upward via the \texttt{aggOp} attribute of each SLO instance. Dependency edges carry a type $\tau \in \{\mathrm{conjunctive}, \mathrm{disjunctive}\}$ that governs operator selection during topological aggregation. The \texttt{\{acyclic\}} invariant on $G=(V,E)$ ensures a well-defined propagation order.}
+\label{fig:metamodel}
+\end{figure}
+
+\subsection{From Aggregation to the Achievable Commitment}\label{sec:agg}
+
+To compute the maximum achievable commitment---which we term the \emph{guaranteeable envelope}---we perform an ascending validation following the topological order of $G$. For each node, we extract the Sub-SLO value $v_i$ and apply an aggregation operator whose definition depends on both the metric type and the dependency type $\tau(e)$ of the traversed edge.
+
+\textbf{Response time.} Under a conjunctive dependency, all providers must respond before the dependent component can reply; the critical path dominates:
+\[
+  A^*_{\mathrm{lat}} = \max_{p \in \mathcal{P}} \sum_{i \in p} v_i
+\]
+where $\mathcal{P}$ is the set of all root-to-leaf paths in $G$ and $v_i$ is the latency Sub-SLO of component $i$. Under a disjunctive dependency, only the responding branch contributes.
+
+\textbf{Cost.} Financial cost accumulates regardless of $\tau(e)$, since all provisioned components incur charges irrespective of whether a given request reaches them:
+\[
+  A^*_{\mathrm{cost}} = \sum_{i \in V} v_i
+\]
+
+\textbf{Availability.} Availability composition is topology-sensitive. For a conjunctive dependency over a set $S$ of components, all must be simultaneously operational; the error budget degrades~\cite{sloss2017calculus}:
+\[
+  A^*_{\mathrm{avail}} = 100 - \sum_{i \in S}(100 - v_i)
+\]
+For a disjunctive dependency over a set $P$ of components, the system remains operational as long as at least one provider is up:
+\[
+  A^*_{\mathrm{avail}} = 100 - \prod_{i \in P}\frac{100 - v_i}{100}
+\]
+In the general mixed case, these operators are applied recursively following the topological order of $G$, propagating partial results upward at each step.
+
+\textbf{Committing below the theoretical maximum.}
+The envelope $A^*$ is computed from the nominal Sub-SLO values $v_i$ as declared in CSP contracts. These values represent best-case contractual commitments, not empirically guaranteed floors: real-world delivery exhibits inevitable deviations due to partial outages, load variations, and progressive degradation. Committing to
+exactly $A^*$ leaves no margin to absorb such deviations---a structural risk that reliability engineering identifies as operating without commitment margin \cite{sloss2017calculus, beyer2016site}.
+
+We therefore introduce a per-component safety margin $\gamma_i > 0$, applied to each Sub-SLO \emph{before} aggregation:
+\[
+  \tilde{v}_i = v_i - \gamma_i
+\]
+The safely committable envelope is then:
+\[
+  A_{\mathrm{commit}} = \mathrm{Aggregate}\bigl(\{\tilde{v}_i\}_{i \in V}\bigr)
+\]
+Applying $\gamma_i$ at the Sub-SLO level rather than subtracting a correction from $A^*$ ensures that each margin is localized where the risk originates and propagates naturally through the aggregation.
+
+$\gamma_i$ is derived from observable properties of the CSP, not chosen arbitrarily. Two regimes apply:
+\begin{itemize}
+  \item \textbf{No historical data (new CSP):} $\gamma_i =
+        \gamma_{\mathrm{tier}(i)}$, derived from the CSP
+        infrastructure tier classification (\cite{turner2006tier} , which encodes a standardized reliability class and provides a conservative, externally grounded lower bound.
+  \item \textbf{Historical data available:} $\gamma_i = k \cdot
+        \sigma_i$, where $\sigma_i$ is the empirical standard deviation of the CSP's delivered performance and $k$ is a confidence factor ($k=2$ covers 95\% of observations under a normal distribution  \cite{ramachandran2020mathematical}).
+\end{itemize}
+In both regimes the tier baseline acts as a floor:
+\[
+  \gamma_i = \max\!\bigl(\gamma_{\mathrm{tier}(i)},\;
+             k \cdot \sigma_i\bigr)
+\]
+with the convention $\sigma_i = 0$ when no historical data is available. If the target Global-SLO exceeds $A_{\mathrm{commit}}$, an \emph{ascending over-commitment fault} is raised.
+
+\subsection{From Target Commitment to Per-Component Requirements}\label{sec:thresholds}
+
+The descending validation takes the target Global-SLO $T$ fixed by the architect as input and translates it into per-component requirements, answering: \textit{"Does each CSP's Sub-SLO cover its share of $T$?"} This validation is independent of the ascending pass: both operate on the same input data and detect complementary classes of fault without privilege to either direction.
+
+Apportioning $T$ uniformly across the $n_c$ components is the simplest decomposition but treats architecturally heterogeneous components as equal consumers of the global budget---an assumption that fails when, for instance, a storage backend structurally dominates cost relative to a stateless authentication service. We therefore derive a structural weight vector from the DAG $G=(V,E)$. The weight of component $i$ is proportional to its in-degree
+$\deg^-(i)$, which captures how many other components depend on it and thus reflects its structural centrality:
+\[
+  w_i = \frac{1 + \deg^-(i)}{\displaystyle\sum_{j \in V}
+        \bigl(1 + \deg^-(j)\bigr)}
+\]
+The threshold allocated to component $i$ for cumulative metrics is:
+\[
+  s_i = w_i \cdot T
+\]
+For availability, the global error budget is distributed according to the same weights:
+\[
+  s_i = 100 - w_i \cdot (100 - T)
+\]
+Applied to the running case (UI $\to$ Auth, UI $\to$ Stor), the in-degrees are $\deg^-(\mathrm{UI})=0$, $\deg^-(\mathrm{Auth})=1$, $\deg^-(\mathrm{Stor})=1$, yielding $w_{\mathrm{UI}}=\tfrac{1}{5}$, $w_{\mathrm{Auth}}=w_{\mathrm{Stor}}=\tfrac{2}{5}$. For a cost target $T=23$\,EUR/h, the thresholds are $s_{\mathrm{UI}}=4.6$, $s_{\mathrm{Auth}}=9.2$, $s_{\mathrm{Stor}}=9.2$\,EUR/h, compared to the uniform baseline of $7.7$\,EUR/h for all three. This differentiation captures the edge cases missed by uniform
+distribution and closes the detection gap identified in the
+evaluation (Section~\ref{sec:eval}). If a CSP's proposed Sub-SLO $v_i$ falls short of $s_i$, a \emph{descending over-commitment fault} is raised for that component.
+
+\subsection{Sustainability under Reconfiguration}\label{sec:translation}
+Static validation is insufficient if the system cannot sustain loads dynamically. Reconfiguration strategies must align with their respective Sub-SLOs. However, an abstraction gap exists: SLOs are high-level functional metrics (e.g., throughput), while elasticity triggers are low-level operational parameters (e.g., CPU or RAM usage). 
+
+We bridge this gap through SLA translation. Using a domain-specific knowledge base, we translate high-level metrics into operational constraints. For example, ensuring a target throughput for a specific message broker might require triggering an elasticity action when CPU usage exceeds 80\%. We systematically compare these translated operational parameters against the predicates of the state machine transitions. If a transition trigger contradicts the operational parameter required to maintain the SLO, the strategy is flagged as faulty.
+
+%==============================================================================
+\section{Tool and Lessons Learned}\label{sec:tool}
+%==============================================================================
+
+To validate our methodology, we implemented \texttt{slacheck}, a lightweight Python-based tool. The prototype takes as input a multi-cloud system described in a YAML schema, detailing the dependency graph with typed edges $\tau(e)$, the Global-SLA, Sub-SLAs with per-component safety margins $\gamma_i$, and state machine-based reconfiguration rules.
+
+The tool relies on a knowledge base (bundled as a configurable registry in \texttt{slacheck}) to store the aggregation mechanisms and SLA translation rules. Upon execution, the tool outputs the safely committable envelope $A_{\mathrm{commit}}$, computes the structural weight vector $w_i$ from the in-degrees of the DAG nodes, calculates the per-component thresholds $s_i = w_i \cdot T$, and lists all detected over-commitment faults in both ascending and descending directions.
+
+Applying this tool to our motivating scenario yielded immediate operational insights. Under the conjunctive dependencies between UI, Auth, and Stor, the tool demonstrated that combining three components with 99.9\% availability results in an achievable global availability
+of only 99.7\%, before applying any safety margin. After applying $\gamma_i$ to each Sub-SLO, $A_{\mathrm{commit}}$ is strictly lower than this theoretical maximum. Consequently, the architect's initial goal to commit to a 99.999\% Global-SLO was structurally impossible and successfully flagged as an ascending fault. This provided the engineering team with clear evidence that a topology change (e.g., adding redundant disjunctive providers) was required before signing the customer agreement.
+
+%==============================================================================
+\section{Evaluation}\label{sec:eval}
+%============= =================================================================
+
+We evaluated the fault-detection capability of our approach against a dataset of multi-cloud SLA scenarios. The evaluation comprised three categories of injected inconsistencies: faults at the Global-SLO level, faults at the Sub-SLO level, and faults within the reconfiguration
+strategies.
+
+As shown in Table~\ref{tab:eval}, our full approach (v2) detects all injected faults across the three categories: Global-SLO (10/10), Sub-SLO (60/60), and reconfiguration (43/43), for a total of 113/113. To isolate the contribution of the typed-DAG model, we run the same dataset through a baseline (v1) that uses series-only aggregation, uniform threshold decomposition, and no reconfiguration model---the closest prior practice. The baseline detects only 67 of 113: it matches v2 on Global-SLO (10/10) but misses 3 of the 60 Sub-SLO faults (57/60, where uniform apportionment under-allocates to low-centrality components) and all 43 reconfiguration faults (0/43, as it has no operational-translation model).
+
+\begin{table}[htbp]
+\caption{Fault detection across scenario categories (v1 baseline vs.\ v2).}
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Scenario Category} & \textbf{Injected} &
+\textbf{v1 Det.} & \textbf{v2 Det.} \\
+\hline
+Global-SLO Inconsistencies      & 10 & 10 & 10 \\
+Sub-SLO Inconsistencies         & 60 & 57 & 60 \\
+Reconfiguration Inconsistencies & 43 &  0 & 43 \\
+\hline
+\textbf{Total}                  & \textbf{113} & \textbf{67} & \textbf{113} \\
+\hline
+\end{tabular}
+\label{tab:eval}
+\end{center}
+\end{table}
+
+The three Sub-SLO faults missed by the baseline arise precisely from its uniform decomposition of $T$ into per-component thresholds $s_i$: equal apportionment treats architecturally heterogeneous components as equal consumers of the global budget, ignoring patterns such as a storage backend that structurally dominates cost relative to a stateless authentication service. The structural weight vector $w_i = (1 + \deg^-(i)) / \sum_{j}(1 + \deg^-(j))$ introduced in Section~\ref{sec:thresholds} apportions $T$ in proportion to structural centrality, tightening the threshold for exactly these low-centrality components and recovering all three cases (Sub-SLO $57/60 \rightarrow 60/60$). The reconfiguration model of Section~\ref{sec:translation} likewise accounts for the 43 elasticity faults the baseline cannot represent ($0/43 \rightarrow 43/43$), raising total detection from $67/113$ to $113/113$. The three-case difference is thus not a residual limitation but a direct, ablated measurement of the weighted decomposition's effect, confirming on the evaluation set the differentiation argued analytically in Section~\ref{sec:thresholds}. As this dataset is constructed to exercise these mechanisms rather than to benchmark diverse production systems, the result should be read as evidence that the mechanisms close the gaps they target, not as an empirical detection rate over arbitrary architectures.
+
+%==============================================================================
+\section{Threats to Validity and Conclusion}\label{sec:concl}
+%==============================================================================
+
+A primary threat to the validity of our approach lies in its reliance on the knowledge base for SLA translation and aggregation mechanisms. The accuracy of detecting reconfiguration faults is entirely bounded by the domain expert's ability to correctly map functional SLOs (e.g., throughput) to operational metrics (e.g., CPU). If this
+mapping is flawed, the tool will yield false positives or negatives. A second threat concerns the derivation of $\gamma_i$: when no historical data is available, the tier-based baseline is a conservative approximation whose tightness depends on the accuracy of the external tier classification relative to actual CSP behavior.
+Furthermore, the derivation of $\gamma_i$ from historical data introduces a calibration dependency: the confidence factor $k$ and the estimation window for $\sigma_i$ must be tuned to balance two competing objectives. A large $k$ reduces the probability of SLO violation but produces a conservative $A_{\mathrm{commit}}$ that may be commercially uncompetitive. A small $k$ improves
+competitiveness but weakens the protection guarantee. No universal calibration exists; the appropriate trade-off depends on the penalty structure of the SLA, the volatility of the CSP's historical performance, and the competitive context. This calibration remains a manual step in the current implementation.
+
+In conclusion, this paper presented a pre-deployment validation methodology to prevent over-commitment in multi-cloud SLAs, grounded in a formal DAG-based meta-model with typed dependency edges. By aggregating adjusted Sub-SLOs $\tilde{v}_i = v_i - \gamma_i$ into a safely committable envelope $A_{\mathrm{commit}}$, and translating high-level metrics to validate elasticity rules, we provide cloud
+architects with a structured answer to exactly what SLA they can safely commit to. Future work will focus on enriching the structural weights with workload- and cost-aware signals beyond pure in-degree, and on integrating these models with post-deployment process mining for continuous runtime
+conformance checking.
+
+%==============================================================================
+% References
+%==============================================================================
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}
