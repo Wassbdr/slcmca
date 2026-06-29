@@ -6,11 +6,12 @@ happens in topology.py / metrics.py so the same parsers run on live and fixture 
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Literal, Protocol, runtime_checkable
 
 from slacheck.config import Settings
 
-SourceKind = Literal["fixture", "live"]
+SourceKind = Literal["fixture", "live", "declared"]
 
 
 @runtime_checkable
@@ -34,8 +35,19 @@ class DatadogSource(Protocol):
         ...
 
 
-def get_source(kind: SourceKind, settings: Settings | None = None) -> DatadogSource:
-    """Factory: ``fixture`` (offline, default for dev) or ``live`` (needs credentials)."""
+def get_source(
+    kind: SourceKind,
+    settings: Settings | None = None,
+    topology: Path | None = None,
+    metrics_from: Literal["live", "fixture"] = "fixture",
+) -> DatadogSource:
+    """Factory for a DatadogSource.
+
+    - ``fixture``: offline, replays fixtures/datadog/*.json (default for dev).
+    - ``live``: real Datadog API (needs credentials).
+    - ``declared``: edges from a hand-written ``topology`` YAML (the APM stand-in while
+      trace ingestion is blocked), with metrics delegated to ``metrics_from`` (live/fixture).
+    """
     if kind == "fixture":
         from slacheck.datadog.fixture_client import FixtureClient
 
@@ -51,5 +63,13 @@ def get_source(kind: SourceKind, settings: Settings | None = None) -> DatadogSou
                 "(see docs/datadog_api_catalog.md 'Access checklist')."
             )
         return LiveClient(settings)
+
+    if kind == "declared":
+        from slacheck.datadog.declared_client import DeclaredClient
+
+        if topology is None:
+            raise ValueError("declared source requires a topology YAML path")
+        inner = get_source(metrics_from, settings)
+        return DeclaredClient(topology, inner)
 
     raise ValueError(f"unknown source kind: {kind!r}")

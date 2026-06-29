@@ -29,6 +29,12 @@ from slacheck.models import (
 
 CATEGORIES = ("global_slo", "sub_slo", "reconfig")
 
+_LABELS = {
+    "global_slo": "Global-SLO Inconsistencies",
+    "sub_slo": "Sub-SLO Inconsistencies",
+    "reconfig": "Reconfiguration Inconsistencies",
+}
+
 
 @dataclass
 class EvalReport:
@@ -135,16 +141,36 @@ def run_eval(dataset_dir: Path, paper_version: PaperVersion) -> EvalReport:
 def format_table(report: EvalReport, paper_version: str) -> str:
     """Render the Table I rows for a report."""
     lines = [f"Fault detection (paper {paper_version}):", ""]
-    lines.append(f"{'Category':<28}{'Injected':>10}{'Detected':>10}")
-    labels = {
-        "global_slo": "Global-SLO Inconsistencies",
-        "sub_slo": "Sub-SLO Inconsistencies",
-        "reconfig": "Reconfiguration Inconsistencies",
-    }
+    lines.append(f"{'Category':<32}{'Injected':>10}{'Detected':>10}")
     for cat in CATEGORIES:
         inj, det = report.by_category.get(cat, (0, 0))
-        lines.append(f"{labels[cat]:<28}{inj:>10}{det:>10}")
+        lines.append(f"{_LABELS[cat]:<32}{inj:>10}{det:>10}")
     return "\n".join(lines)
+
+
+def format_latex(v1: EvalReport, v2: EvalReport) -> str:
+    """Render a paper-ready LaTeX table comparing v1 and v2 detection (paper Table I)."""
+    rows = []
+    for cat in CATEGORIES:
+        inj = v2.injected(cat)  # injected count is the same for both
+        d1 = v1.detected(cat)
+        d2 = v2.detected(cat)
+        rows.append(f"{_LABELS[cat]} & {inj} & {d1} & {d2} \\\\")
+    body = "\n".join(rows)
+    return (
+        "\\begin{table}[t]\n"
+        "\\centering\n"
+        "\\caption{Fault detection across scenario categories (v1 vs.\\ v2).}\n"
+        "\\label{tab:eval}\n"
+        "\\begin{tabular}{lccc}\n"
+        "\\hline\n"
+        "Scenario Category & Injected & v1 Det. & v2 Det. \\\\\n"
+        "\\hline\n"
+        f"{body}\n"
+        "\\hline\n"
+        "\\end{tabular}\n"
+        "\\end{table}"
+    )
 
 
 def category_dirs(dataset_dir: Path) -> Iterable[Path]:

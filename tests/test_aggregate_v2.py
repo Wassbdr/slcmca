@@ -43,6 +43,32 @@ def test_conjunctive_latency_takes_worst_path():
     assert compute_envelope_v2(g).response_time_ms == pytest.approx(30.0)
 
 
+def test_mixed_conjunctive_and_disjunctive_latency():
+    # UI(10) depends conjunctively on Core(20) AND on a disjunctive replica group {5, 50}.
+    # latency = 10 + max(Core=20, min(reps)=5) = 30 (conjunctive Core dominates).
+    g = DependencyGraph(
+        components={
+            "UI": _c("UI", lat=10),
+            "Core": _c("Core", lat=20),
+            "RepA": _c("RepA", lat=5),
+            "RepB": _c("RepB", lat=50),
+        },
+        edges=[
+            DependencyEdge(source="UI", target="Core", edge_type="conjunctive"),
+            DependencyEdge(source="UI", target="RepA", edge_type="disjunctive"),
+            DependencyEdge(source="UI", target="RepB", edge_type="disjunctive"),
+        ],
+        entrypoint="UI",
+    )
+    assert compute_envelope_v2(g).response_time_ms == pytest.approx(30.0)
+
+    # when the disjunctive (min) branch is the slowest contributor, it dominates instead.
+    g.components["Core"].slo.response_time_ms = 2.0
+    g2 = DependencyGraph(components=g.components, edges=g.edges, entrypoint="UI")
+    # 10 + max(Core=2, min(5,50)=5) = 15
+    assert compute_envelope_v2(g2).response_time_ms == pytest.approx(15.0)
+
+
 def test_envelope_matches_paper_conjunctive(paper_scenario_v2):
     env = compute_envelope_v2(paper_scenario_v2["graph"])
     assert env.availability_pct == pytest.approx(99.7)  # conjunctive == v1

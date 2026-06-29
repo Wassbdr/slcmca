@@ -94,7 +94,9 @@ def _render(result: AnalysisResult) -> None:
 def analyze_cmd(
     entrypoint: str = typer.Option(..., "--entrypoint", "-e", help="Entrypoint service."),
     constraint: str = typer.Option("latency", "--constraint", "-c", help="latency | availability"),
-    source: str = typer.Option("fixture", "--source", help="fixture | live"),
+    source: str = typer.Option("fixture", "--source", help="fixture | live | declared"),
+    topology: Path | None = typer.Option(None, help="Topology YAML (for --source declared)."),
+    metrics_from: str = typer.Option("fixture", help="declared source: live | fixture metrics."),
     paper_version: str = typer.Option("v1", "--paper-version", help="v1 | v2"),
     sink: str | None = typer.Option(None, "--sink", help="Optional target/sink service."),
     max_latency_ms: float | None = typer.Option(None, help="Global target: max latency (ms)."),
@@ -105,7 +107,7 @@ def analyze_cmd(
     knowledge_base: Path | None = typer.Option(None, help="YAML knowledge base / margins (v2)."),
 ) -> None:
     """Run the pipeline and print the envelope and any faults."""
-    src = get_source(source)  # type: ignore[arg-type]
+    src = get_source(source, topology=topology, metrics_from=metrics_from)  # type: ignore[arg-type]
     target = _build_target(max_latency_ms, min_availability_pct, max_cost_eur_h)
     edges = yaml.safe_load(edge_overrides.read_text()) if edge_overrides else None
     kb = None
@@ -235,9 +237,15 @@ def eval_cmd(
     dataset: Path = typer.Option(_REPO_ROOT / "fixtures" / "eval", help="Eval dataset dir."),
     paper_version: str = typer.Option("v2", "--paper-version", help="v1 | v2"),
     both: bool = typer.Option(False, help="Show v1 and v2 side by side."),
+    latex: bool = typer.Option(False, help="Emit a paper-ready LaTeX table (v1 vs v2)."),
 ) -> None:
     """Reproduce the paper's fault-detection Table I for v1 and/or v2."""
-    from slacheck.eval.runner import format_table, run_eval
+    from slacheck.eval.runner import format_latex, format_table, run_eval
+
+    if latex:
+        v1, v2 = run_eval(dataset, "v1"), run_eval(dataset, "v2")
+        typer.echo(format_latex(v1, v2))
+        return
 
     versions = ["v1", "v2"] if both else [paper_version]
     for ver in versions:

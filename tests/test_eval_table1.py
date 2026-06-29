@@ -31,3 +31,13 @@ def test_weighted_decomposition_closes_the_gap():
     v1 = run_eval(DATASET, "v1")
     v2 = run_eval(DATASET, "v2")
     assert v2.detected("sub_slo") - v1.detected("sub_slo") == 3
+
+
+def test_latex_table_is_paper_ready():
+    from slacheck.eval.runner import format_latex
+
+    latex = format_latex(run_eval(DATASET, "v1"), run_eval(DATASET, "v2"))
+    assert "\\begin{table}" in latex and "\\end{table}" in latex
+    # the headline rows: v1 57 vs v2 60 Sub-SLO, v1 0 vs v2 43 reconfig
+    assert "Sub-SLO Inconsistencies & 60 & 57 & 60" in latex
+    assert "Reconfiguration Inconsistencies & 43 & 0 & 43" in latex
