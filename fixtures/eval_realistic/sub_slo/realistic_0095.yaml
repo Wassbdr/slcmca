@@ -1,0 +1,155 @@
+# Auto-generated realistic scenario. See scripts/gen_realistic_eval.py.
+entrypoint: s0
+components:
+- name: s0
+  slo:
+    cost_eur_h: 1.0
+- name: s1
+  slo:
+    cost_eur_h: 1.0
+- name: s2
+  slo:
+    cost_eur_h: 1.0
+- name: s3
+  slo:
+    cost_eur_h: 1.0
+- name: s4
+  slo:
+    cost_eur_h: 1.0
+- name: s5
+  slo:
+    cost_eur_h: 1.0
+- name: s6
+  slo:
+    cost_eur_h: 1.0
+- name: s7
+  slo:
+    cost_eur_h: 1.0
+- name: s8
+  slo:
+    cost_eur_h: 1.0
+- name: s9
+  slo:
+    cost_eur_h: 1.0
+- name: s10
+  slo:
+    cost_eur_h: 1.0
+- name: s11
+  slo:
+    cost_eur_h: 1.0
+- name: s12
+  slo:
+    cost_eur_h: 1.0
+- name: s13
+  slo:
+    cost_eur_h: 1.0
+- name: s14
+  slo:
+    cost_eur_h: 1.0
+- name: s15
+  slo:
+    cost_eur_h: 1.0
+- name: s16
+  slo:
+    cost_eur_h: 1.0
+- name: s17
+  slo:
+    cost_eur_h: 1.0
+- name: s18
+  slo:
+    cost_eur_h: 1.0
+- name: s19
+  slo:
+    cost_eur_h: 0.958
+- name: s20
+  slo:
+    cost_eur_h: 1.0
+- name: s21
+  slo:
+    cost_eur_h: 1.0
+edges:
+- source: s0
+  target: s1
+  edge_type: conjunctive
+- source: s0
+  target: s2
+  edge_type: conjunctive
+- source: s2
+  target: s3
+  edge_type: conjunctive
+- source: s1
+  target: s4
+  edge_type: conjunctive
+- source: s2
+  target: s5
+  edge_type: conjunctive
+- source: s5
+  target: s6
+  edge_type: conjunctive
+- source: s0
+  target: s7
+  edge_type: conjunctive
+- source: s6
+  target: s7
+  edge_type: conjunctive
+- source: s3
+  target: s8
+  edge_type: conjunctive
+- source: s3
+  target: s9
+  edge_type: conjunctive
+- source: s0
+  target: s10
+  edge_type: conjunctive
+- source: s4
+  target: s10
+  edge_type: conjunctive
+- source: s10
+  target: s11
+  edge_type: conjunctive
+- source: s4
+  target: s11
+  edge_type: conjunctive
+- source: s6
+  target: s12
+  edge_type: conjunctive
+- source: s10
+  target: s13
+  edge_type: conjunctive
+- source: s6
+  target: s14
+  edge_type: conjunctive
+- source: s4
+  target: s15
+  edge_type: conjunctive
+- source: s5
+  target: s16
+  edge_type: conjunctive
+- source: s6
+  target: s16
+  edge_type: conjunctive
+- source: s0
+  target: s17
+  edge_type: conjunctive
+- source: s0
+  target: s18
+  edge_type: conjunctive
+- source: s18
+  target: s19
+  edge_type: conjunctive
+- source: s1
+  target: s20
+  edge_type: conjunctive
+- source: s11
+  target: s20
+  edge_type: conjunctive
+- source: s12
+  target: s21
+  edge_type: conjunctive
+global_target:
+  cost_eur_h: 22.0
+expected:
+  category: sub_slo
+  metric: cost
+  direction: descending
+  component: s19

@@ -43,24 +43,28 @@ slacheck analyze --source live --entrypoint ts-gateway-service --constraint late
 slacheck publish --source live --entrypoint ts-gateway-service --constraint latency
 ```
 
-## Reproducing the train-ticket case study
+## Reproducing the empirical evaluation
 
-The paper's Real-World Case Study (38 services) is fully reproducible **offline** from the declared
-topology + fixture metrics — no credentials:
+All three evaluation levels in the paper are reproducible **offline**, no credentials:
 
 ```bash
-python scripts/case_study.py        # emits the v1-vs-v2 numbers + the LaTeX table (tab:casestudy)
-
-# the underlying analyze invocations it runs:
+# 1. Real-world case study — train-ticket (38 services), v1 vs v2:
+python scripts/case_study.py          # v2: 6 faults / env 98.36%; v1: 3 / 99.40%; latency false-negative
 slacheck analyze --source declared --topology fixtures/topology/train-ticket.yaml \
   --metrics-from fixture --paper-version v2 -e ts-ui-dashboard -c availability \
-  --min-availability-pct 99.9 --pricing fixtures/scenarios/pricing.example.yaml   # v2: 6 faults, env 98.36%
-#   ...same with --paper-version v1 → 3 faults, env 99.40%
-#   ...with -c latency --max-latency-ms 30 → v1 feasible (24ms) vs v2 fault (48ms)
+  --min-availability-pct 99.9 --pricing fixtures/scenarios/pricing.example.yaml
+
+# 2. Multiple real systems — train-ticket + Online Boutique (call graph from the GCP manifest):
+python scripts/multi_system_study.py  # emits Table tab:realsystems
+
+# 3. Statistical validation — 200 realistic topologies (Alibaba-like distributions, fixed seed):
+python scripts/gen_realistic_eval.py 200   # (re)generate the dataset (deterministic)
+python scripts/realistic_study.py          # v2 89.5% vs v1 4.0% [Wilson 95% CI], Table tab:realistic
 ```
 
-`tests/test_case_study.py` locks these numbers. The live Datadog path (real APM topology,
-provenance only) is documented in [fixtures/datadog_live/README.md](fixtures/datadog_live/README.md).
+Tests lock these numbers: `tests/test_case_study.py` (real systems) and
+`tests/test_realistic_study.py` (population). The live Datadog path (real APM topology, provenance
+only) is documented in [fixtures/datadog_live/README.md](fixtures/datadog_live/README.md).
 
 ## Docs
 
