@@ -95,3 +95,51 @@ def test_real_topology_has_a_broken_cycle():
     r = _run("v2", "availability", SloValues(availability_pct=99.9))
     assert r.dropped_edges  # non-empty: a real microservice graph is not a clean DAG
     assert ("ts-seat-service", "ts-travel-service") in r.dropped_edges
+
+
+# --- second real system: Online Boutique (call graph from the official GCP k8s manifest) -------
+
+OB_TOPOLOGY = REPO / "fixtures" / "topology" / "real" / "online-boutique.yaml"
+
+
+def _online_boutique_graph():
+    """Build the Online Boutique typed DAG with a uniform nominal 99.9% Sub-SLO per service."""
+    import yaml
+
+    from slacheck.models import Component, DependencyEdge, DependencyGraph
+    from slacheck.models import SloValues as SV
+
+    deps = yaml.safe_load(OB_TOPOLOGY.read_text())["dependencies"]
+    names = list(deps)
+    edges = [
+        DependencyEdge(source=u, target=v, edge_type="conjunctive")
+        for u, vs in deps.items()
+        for v in vs
+    ]
+    comps = {n: Component(name=n, slo=SV(availability_pct=99.9)) for n in names}
+    return DependencyGraph(components=comps, edges=edges, entrypoint="frontend")
+
+
+def test_online_boutique_is_valid_and_acyclic():
+    g = _online_boutique_graph()
+    assert len(g.components) == 10
+    assert sum(len(g.successors(n)) for n in g.components) == 14  # edges from the manifest
+
+
+def test_online_boutique_productcatalog_is_most_central():
+    """productcatalogservice is called by frontend, checkout and recommendation (in-degree 3)."""
+    from slacheck.envelope.v2.decompose_v2 import structural_weights
+
+    g = _online_boutique_graph()
+    w = structural_weights(g)
+    assert max(w, key=w.get) == "productcatalogservice"
+    assert g.indegree("productcatalogservice") == 3
+
+
+def test_online_boutique_envelope_below_target():
+    """10 conjunctive services at 99.9% compose to an envelope under a 99.9% Global-SLO."""
+    from slacheck.envelope.v2.aggregate_v2 import compute_envelope_v2
+
+    env = compute_envelope_v2(_online_boutique_graph())
+    assert env.availability_pct == pytest.approx(98.5, abs=0.01)
+    assert env.availability_pct < 99.9  # the architect target is structurally unachievable
