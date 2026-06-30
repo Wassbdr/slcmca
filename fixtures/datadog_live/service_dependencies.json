@@ -1,120 +1,120 @@
 {
   "agent": {
     "calls": [
-      "cluster-agent",
-      "cert-manager-controller",
-      "ts-admin-travel-service-with-jaeger",
-      "ts-route-plan-service-with-jaeger",
-      "ts-route-plan-service",
-      "cert-manager-webhook",
-      "ts-travel2-service-with-jaeger",
-      "ts-admin-travel-service",
-      "ts-food-map-service-with-jaeger",
-      "mirrored-prometheus-node-exporter",
-      "ts-preserve-service-with-jaeger",
-      "kube-state-metrics",
-      "ts-consign-price-service",
-      "ts-security-service-with-jaeger",
-      "pilot",
-      "ts-station-service-with-jaeger",
-      "front-end",
-      "easytravel-backend",
-      "user",
-      "ts-verification-code-service",
-      "appco-node-exporter",
-      "ts-admin-user-service-with-jaeger",
-      "ts-notification-service-with-jaeger",
-      "ts-admin-route-service",
-      "ts-travel-service",
-      "ts-travel-service-with-jaeger",
-      "ts-auth-service-with-jaeger",
-      "ts-payment-service",
-      "ts-order-service",
-      "ts-contacts-service",
-      "ts-travel-plan-service",
-      "ts-price-service",
-      "helm-controller",
-      "ts-order-other-service",
-      "install-cni",
-      "opentelemetry-collector-contrib",
-      "ts-admin-basic-info-service",
-      "ts-verification-code-service-with-jaeger",
-      "source-controller",
-      "ts-food-service",
-      "ts-seat-service-with-jaeger",
-      "ts-seat-service",
-      "json-exporter",
-      "ts-ticketinfo-service",
-      "nginx-gateway-fabric",
-      "queue-master",
-      "carts",
-      "ts-admin-user-service",
-      "ts-food-map-service",
-      "ts-basic-service-with-jaeger",
       "ts-execute-service",
-      "payment",
-      "nginx-prometheus-exporter",
-      "ts-inside-payment-service-with-jaeger",
-      "ts-config-service",
-      "shipping",
-      "ts-admin-order-service-with-jaeger",
-      "proxyv2",
-      "node-exporter",
-      "orders",
-      "rabbitmq-exporter",
-      "all-in-one",
-      "ts-consign-service",
-      "ts-travel2-service",
-      "ts-preserve-other-service-with-jaeger",
-      "chaos-coredns",
-      "ts-payment-service-with-jaeger",
-      "ts-cancel-service",
-      "mongodb_exporter",
-      "ts-auth-service",
-      "rabbitmq",
-      "catalogue",
       "chaos-mesh",
-      "ts-train-service-with-jaeger",
-      "ts-consign-price-service-with-jaeger",
-      "ts-price-service-with-jaeger",
-      "operator",
-      "ts-route-service-with-jaeger",
-      "ts-inside-payment-service",
-      "ts-rebook-service-with-jaeger",
-      "ts-consign-service-with-jaeger",
-      "ts-rebook-service",
-      "ts-assurance-service",
-      "ts-preserve-service",
-      "cert-manager-cainjector",
-      "ts-assurance-service-with-jaeger",
-      "ts-route-service",
-      "ts-notification-service",
-      "kustomize-controller",
-      "ts-config-service-with-jaeger",
-      "ts-cancel-service-with-jaeger",
-      "ts-order-other-service-with-jaeger",
-      "image-reflector-controller",
-      "speaker",
-      "ts-contacts-service-with-jaeger",
-      "ts-preserve-other-service",
-      "ts-admin-basic-info-service-with-jaeger",
-      "ts-train-service",
-      "image-automation-controller",
-      "ts-food-service-with-jaeger",
-      "ts-user-service",
-      "ts-admin-route-service-with-jaeger",
-      "mirrored-cilium-operator-generic",
-      "ts-ticketinfo-service-with-jaeger",
-      "controller",
-      "mongodb-exporter",
-      "ts-station-service",
+      "ts-auth-service-with-jaeger",
       "ts-admin-order-service",
-      "ts-user-service-with-jaeger",
+      "ts-train-service",
+      "ts-travel-service",
+      "ts-food-map-service",
+      "ts-basic-service",
+      "ts-consign-service-with-jaeger",
+      "ts-verification-code-service-with-jaeger",
+      "ts-admin-user-service-with-jaeger",
+      "ts-order-other-service",
       "ts-travel-plan-service-with-jaeger",
-      "notification-controller",
-      "ts-execute-service-with-jaeger",
+      "shipping",
+      "ts-user-service",
+      "ts-route-plan-service-with-jaeger",
+      "user",
+      "ts-admin-basic-info-service-with-jaeger",
+      "catalogue",
+      "helm-controller",
+      "chaos-coredns",
+      "ts-order-other-service-with-jaeger",
+      "ts-order-service",
+      "pilot",
+      "appco-node-exporter",
+      "ts-price-service-with-jaeger",
+      "ts-notification-service-with-jaeger",
+      "nginx-prometheus-exporter",
+      "ts-preserve-service-with-jaeger",
+      "ts-verification-code-service",
       "ts-security-service",
-      "ts-basic-service"
+      "ts-consign-price-service",
+      "image-reflector-controller",
+      "ts-payment-service-with-jaeger",
+      "mirrored-prometheus-node-exporter",
+      "node-exporter",
+      "ts-admin-basic-info-service",
+      "queue-master",
+      "kustomize-controller",
+      "ts-payment-service",
+      "rabbitmq",
+      "ts-config-service",
+      "ts-seat-service-with-jaeger",
+      "ts-ticketinfo-service",
+      "mongodb_exporter",
+      "cert-manager-cainjector",
+      "operator",
+      "ts-rebook-service-with-jaeger",
+      "ts-preserve-other-service",
+      "opentelemetry-collector-contrib",
+      "json-exporter",
+      "ts-ticketinfo-service-with-jaeger",
+      "ts-contacts-service",
+      "ts-admin-travel-service",
+      "ts-travel2-service",
+      "ts-inside-payment-service-with-jaeger",
+      "all-in-one",
+      "ts-preserve-service",
+      "ts-config-service-with-jaeger",
+      "ts-consign-service",
+      "ts-cancel-service-with-jaeger",
+      "orders",
+      "ts-cancel-service",
+      "ts-station-service",
+      "ts-admin-user-service",
+      "ts-route-plan-service",
+      "ts-assurance-service-with-jaeger",
+      "ts-auth-service",
+      "ts-consign-price-service-with-jaeger",
+      "ts-travel-plan-service",
+      "ts-assurance-service",
+      "ts-admin-travel-service-with-jaeger",
+      "ts-security-service-with-jaeger",
+      "install-cni",
+      "ts-price-service",
+      "ts-travel2-service-with-jaeger",
+      "ts-admin-route-service-with-jaeger",
+      "controller",
+      "front-end",
+      "ts-seat-service",
+      "speaker",
+      "ts-food-service-with-jaeger",
+      "ts-route-service",
+      "carts",
+      "ts-travel-service-with-jaeger",
+      "ts-food-map-service-with-jaeger",
+      "proxyv2",
+      "source-controller",
+      "easytravel-backend",
+      "image-automation-controller",
+      "payment",
+      "rabbitmq-exporter",
+      "ts-notification-service",
+      "mirrored-cilium-operator-generic",
+      "ts-user-service-with-jaeger",
+      "ts-train-service-with-jaeger",
+      "ts-preserve-other-service-with-jaeger",
+      "ts-food-service",
+      "ts-admin-route-service",
+      "ts-rebook-service",
+      "notification-controller",
+      "cert-manager-controller",
+      "kube-state-metrics",
+      "ts-route-service-with-jaeger",
+      "cluster-agent",
+      "ts-execute-service-with-jaeger",
+      "ts-admin-order-service-with-jaeger",
+      "ts-basic-service-with-jaeger",
+      "nginx-gateway-fabric",
+      "ts-contacts-service-with-jaeger",
+      "ts-station-service-with-jaeger",
+      "ts-inside-payment-service",
+      "cert-manager-webhook",
+      "mongodb-exporter"
     ]
   },
   "alertmanager": {
@@ -187,11 +187,6 @@
   },
   "coder": {
     "calls": []
-  },
-  "codeserver-python": {
-    "calls": [
-      "proxyv2"
-    ]
   },
   "controller": {
     "calls": []
@@ -307,11 +302,18 @@
       "easytravel-backend"
     ]
   },
+  "jupyter-web-app": {
+    "calls": [
+      "proxyv2"
+    ]
+  },
   "k8s": {
     "calls": []
   },
   "k8s-sidecar": {
-    "calls": []
+    "calls": [
+      "hardened-kubernetes"
+    ]
   },
   "katib-controller": {
     "calls": []
@@ -416,6 +418,9 @@
   "mongodb_exporter": {
     "calls": []
   },
+  "n8n": {
+    "calls": []
+  },
   "nginx": {
     "calls": []
   },
@@ -424,8 +429,10 @@
   },
   "nginx-ingress-controller": {
     "calls": [
+      "n8n",
+      "rancher",
       "nginx",
-      "rancher"
+      "prometheus"
     ]
   },
   "nginx-prometheus-exporter": {
@@ -476,127 +483,127 @@
   },
   "prom-prometheus": {
     "calls": [
+      "appco-alertmanager",
+      "appco-node-exporter",
+      "appco-kube-state-metrics",
+      "mirrored-prometheus-node-exporter",
+      "virt-api",
+      "nginx-ingress-controller",
+      "cdi-operator",
       "longhorn-manager",
       "hardened-coredns",
-      "cdi-controller",
-      "mirrored-prometheus-operator-prometheus-operator",
-      "nginx-ingress-controller",
-      "virt-controller",
       "mirrored-library-nginx",
-      "cdi-operator",
-      "mirrored-prometheus-alertmanager",
-      "virt-operator",
       "mirrored-kube-state-metrics-kube-state-metrics",
-      "appco-kube-state-metrics",
-      "appco-node-exporter",
-      "virt-api",
+      "virt-controller",
       "virt-handler",
-      "mirrored-prometheus-node-exporter",
-      "appco-alertmanager"
+      "cdi-controller",
+      "virt-operator",
+      "mirrored-prometheus-alertmanager",
+      "mirrored-prometheus-operator-prometheus-operator"
     ]
   },
   "prometheus": {
     "calls": [
-      "ts-preserve-service-with-jaeger",
-      "ts-rebook-service",
-      "ts-user-service-with-jaeger",
-      "ts-config-service-with-jaeger",
-      "ts-station-service",
-      "ts-inside-payment-service-with-jaeger",
-      "ts-route-service-with-jaeger",
-      "ts-ticketinfo-service",
-      "ts-notification-service-with-jaeger",
-      "ts-execute-service-with-jaeger",
-      "ts-price-service",
-      "ts-order-service",
-      "prometheus-config-reloader",
-      "catalogue",
-      "ts-security-service-with-jaeger",
-      "ts-config-service",
-      "ts-admin-travel-service",
-      "loki",
-      "hardened-coredns",
-      "ts-food-map-service",
-      "chaos-mesh",
-      "ts-admin-travel-service-with-jaeger",
-      "ts-seat-service",
-      "ts-food-service-with-jaeger",
-      "ts-consign-service-with-jaeger",
-      "grafana",
-      "ts-assurance-service-with-jaeger",
-      "ts-notification-service",
-      "ts-admin-basic-info-service-with-jaeger",
-      "ts-order-other-service-with-jaeger",
-      "blackbox-exporter",
-      "ts-inside-payment-service",
-      "pushgateway",
-      "ts-assurance-service",
-      "prometheus-operator",
-      "ts-rebook-service-with-jaeger",
-      "payment",
-      "ts-payment-service-with-jaeger",
-      "kube-state-metrics",
-      "ts-route-service",
-      "ts-travel-service-with-jaeger",
-      "opentelemetry-collector-contrib",
-      "ts-price-service-with-jaeger",
-      "ts-auth-service",
-      "ts-route-plan-service",
-      "ts-consign-service",
-      "ts-train-service",
-      "ts-route-plan-service-with-jaeger",
-      "ts-admin-user-service",
-      "ts-preserve-other-service-with-jaeger",
-      "ts-execute-service",
       "user",
-      "orders",
-      "ts-travel2-service",
-      "ts-contacts-service-with-jaeger",
-      "ts-basic-service",
-      "ts-admin-basic-info-service",
-      "queue-master",
-      "ts-cancel-service-with-jaeger",
-      "shipping",
-      "ts-travel2-service-with-jaeger",
-      "alertmanager",
-      "ts-consign-price-service",
-      "ts-consign-price-service-with-jaeger",
-      "ts-admin-order-service-with-jaeger",
-      "chaos-daemon",
-      "ts-preserve-service",
-      "nginx-prometheus-exporter",
-      "all-in-one",
-      "json-exporter",
-      "carts",
-      "ts-food-map-service-with-jaeger",
-      "ts-admin-route-service",
-      "ts-travel-plan-service",
-      "ts-travel-service",
-      "ts-seat-service-with-jaeger",
-      "ts-contacts-service",
-      "ts-verification-code-service",
-      "ts-basic-service-with-jaeger",
-      "ts-admin-order-service",
-      "ts-admin-route-service-with-jaeger",
-      "ts-payment-service",
-      "dqn-scheduler",
+      "ts-notification-service",
+      "ts-route-plan-service",
       "ts-food-service",
-      "ts-security-service",
-      "ts-order-other-service",
-      "ts-cancel-service",
-      "ts-user-service",
-      "ts-verification-code-service-with-jaeger",
-      "ts-ticketinfo-service-with-jaeger",
-      "ts-station-service-with-jaeger",
-      "ts-admin-user-service-with-jaeger",
-      "ts-preserve-other-service",
-      "chaos-coredns",
-      "ts-travel-plan-service-with-jaeger",
-      "ts-auth-service-with-jaeger",
+      "ts-payment-service",
+      "ts-seat-service-with-jaeger",
+      "ts-travel-service-with-jaeger",
       "front-end",
-      "ts-train-service-with-jaeger",
+      "ts-contacts-service-with-jaeger",
+      "ts-cancel-service-with-jaeger",
+      "ts-preserve-other-service-with-jaeger",
+      "catalogue",
+      "ts-order-other-service-with-jaeger",
+      "ts-ticketinfo-service",
+      "ts-food-map-service-with-jaeger",
+      "ts-admin-order-service-with-jaeger",
+      "payment",
+      "kube-state-metrics",
+      "ts-admin-travel-service",
+      "ts-verification-code-service-with-jaeger",
+      "ts-execute-service-with-jaeger",
+      "ts-basic-service",
+      "ts-assurance-service",
+      "hardened-coredns",
+      "ts-verification-code-service",
+      "ts-consign-service",
+      "ts-ticketinfo-service-with-jaeger",
+      "ts-admin-order-service",
+      "ts-station-service-with-jaeger",
+      "queue-master",
+      "all-in-one",
+      "ts-admin-route-service",
+      "ts-rebook-service-with-jaeger",
+      "chaos-daemon",
+      "ts-travel-service",
       "node-exporter",
-      "mongodb_exporter"
+      "ts-admin-route-service-with-jaeger",
+      "dqn-scheduler",
+      "ts-consign-price-service-with-jaeger",
+      "ts-consign-service-with-jaeger",
+      "ts-preserve-service",
+      "ts-order-other-service",
+      "chaos-mesh",
+      "ts-consign-price-service",
+      "ts-assurance-service-with-jaeger",
+      "ts-basic-service-with-jaeger",
+      "prometheus-config-reloader",
+      "chaos-coredns",
+      "ts-inside-payment-service",
+      "blackbox-exporter",
+      "ts-inside-payment-service-with-jaeger",
+      "ts-food-service-with-jaeger",
+      "prometheus-operator",
+      "ts-train-service-with-jaeger",
+      "ts-cancel-service",
+      "ts-admin-user-service",
+      "opentelemetry-collector-contrib",
+      "ts-station-service",
+      "ts-route-plan-service-with-jaeger",
+      "ts-security-service-with-jaeger",
+      "ts-route-service",
+      "ts-preserve-service-with-jaeger",
+      "ts-admin-travel-service-with-jaeger",
+      "nginx-prometheus-exporter",
+      "ts-notification-service-with-jaeger",
+      "ts-preserve-other-service",
+      "carts",
+      "ts-travel2-service-with-jaeger",
+      "ts-auth-service",
+      "orders",
+      "ts-payment-service-with-jaeger",
+      "ts-train-service",
+      "ts-user-service",
+      "ts-contacts-service",
+      "ts-price-service-with-jaeger",
+      "ts-config-service",
+      "ts-seat-service",
+      "ts-route-service-with-jaeger",
+      "ts-travel-plan-service",
+      "alertmanager",
+      "json-exporter",
+      "ts-price-service",
+      "ts-admin-basic-info-service",
+      "mongodb_exporter",
+      "ts-security-service",
+      "shipping",
+      "ts-admin-basic-info-service-with-jaeger",
+      "loki",
+      "ts-auth-service-with-jaeger",
+      "ts-travel-plan-service-with-jaeger",
+      "ts-admin-user-service-with-jaeger",
+      "ts-food-map-service",
+      "ts-user-service-with-jaeger",
+      "ts-rebook-service",
+      "ts-config-service-with-jaeger",
+      "grafana",
+      "ts-execute-service",
+      "ts-travel2-service",
+      "ts-order-service",
+      "pushgateway"
     ]
   },
   "prometheus-config-reloader": {
@@ -615,8 +622,10 @@
   },
   "proxyv2": {
     "calls": [
+      "oauth2-proxy",
+      "fabric-orderer",
       "webhook",
-      "fabric-orderer"
+      "dex"
     ]
   },
   "pushgateway": {
@@ -673,13 +682,12 @@
     "calls": []
   },
   "ts-admin-basic-info-service": {
-    "calls": []
+    "calls": [
+      "ts-station-service"
+    ]
   },
   "ts-admin-basic-info-service-with-jaeger": {
-    "calls": [
-      "ts-config-service-with-jaeger",
-      "ts-price-service-with-jaeger"
-    ]
+    "calls": []
   },
   "ts-admin-order-service": {
     "calls": []
@@ -721,16 +729,14 @@
   },
   "ts-basic-service": {
     "calls": [
-      "ts-station-service"
+      "ts-station-service",
+      "ts-route-service",
+      "ts-price-service",
+      "ts-train-service"
     ]
   },
   "ts-basic-service-with-jaeger": {
-    "calls": [
-      "ts-train-service-with-jaeger",
-      "ts-price-service-with-jaeger",
-      "ts-route-service-with-jaeger",
-      "ts-station-service-with-jaeger"
-    ]
+    "calls": []
   },
   "ts-cancel-service": {
     "calls": []
@@ -739,7 +745,9 @@
     "calls": []
   },
   "ts-config-service": {
-    "calls": []
+    "calls": [
+      "mongo"
+    ]
   },
   "ts-config-service-with-jaeger": {
     "calls": []
@@ -754,12 +762,12 @@
     "calls": []
   },
   "ts-consign-service-with-jaeger": {
-    "calls": [
-      "ts-consign-price-service-with-jaeger"
-    ]
+    "calls": []
   },
   "ts-contacts-service": {
-    "calls": []
+    "calls": [
+      "mongo"
+    ]
   },
   "ts-contacts-service-with-jaeger": {
     "calls": []
@@ -780,19 +788,13 @@
     "calls": []
   },
   "ts-food-service-with-jaeger": {
-    "calls": [
-      "ts-food-map-service-with-jaeger",
-      "ts-travel-service-with-jaeger",
-      "ts-station-service-with-jaeger"
-    ]
+    "calls": []
   },
   "ts-inside-payment-service": {
     "calls": []
   },
   "ts-inside-payment-service-with-jaeger": {
-    "calls": [
-      "ts-order-other-service-with-jaeger"
-    ]
+    "calls": []
   },
   "ts-notification-service": {
     "calls": []
@@ -801,15 +803,17 @@
     "calls": []
   },
   "ts-order-other-service": {
-    "calls": []
-  },
-  "ts-order-other-service-with-jaeger": {
     "calls": [
-      "ts-station-service-with-jaeger"
+      "mongo"
     ]
   },
-  "ts-order-service": {
+  "ts-order-other-service-with-jaeger": {
     "calls": []
+  },
+  "ts-order-service": {
+    "calls": [
+      "mongo"
+    ]
   },
   "ts-order-service-with-jaeger": {
     "calls": []
@@ -833,7 +837,9 @@
     "calls": []
   },
   "ts-price-service": {
-    "calls": []
+    "calls": [
+      "mongo"
+    ]
   },
   "ts-price-service-with-jaeger": {
     "calls": []
@@ -842,20 +848,13 @@
     "calls": []
   },
   "ts-rebook-service-with-jaeger": {
-    "calls": [
-      "ts-order-other-service-with-jaeger"
-    ]
+    "calls": []
   },
   "ts-route-plan-service": {
     "calls": []
   },
   "ts-route-plan-service-with-jaeger": {
-    "calls": [
-      "ts-travel2-service-with-jaeger",
-      "ts-travel-service-with-jaeger",
-      "ts-station-service-with-jaeger",
-      "ts-route-service-with-jaeger"
-    ]
+    "calls": []
   },
   "ts-route-service": {
     "calls": [
@@ -866,7 +865,12 @@
     "calls": []
   },
   "ts-seat-service": {
-    "calls": []
+    "calls": [
+      "ts-route-service",
+      "ts-config-service",
+      "ts-order-service",
+      "ts-travel-service"
+    ]
   },
   "ts-seat-service-with-jaeger": {
     "calls": []
@@ -891,9 +895,7 @@
     ]
   },
   "ts-ticketinfo-service-with-jaeger": {
-    "calls": [
-      "ts-basic-service-with-jaeger"
-    ]
+    "calls": []
   },
   "ts-train-service": {
     "calls": []
@@ -905,55 +907,35 @@
     "calls": []
   },
   "ts-travel-plan-service-with-jaeger": {
-    "calls": [
-      "ts-route-plan-service-with-jaeger"
-    ]
+    "calls": []
   },
   "ts-travel-service": {
     "calls": [
-      "ts-route-service",
-      "ts-ticketinfo-service"
+      "ts-ticketinfo-service",
+      "ts-order-service",
+      "ts-seat-service",
+      "ts-route-service"
     ]
   },
   "ts-travel-service-with-jaeger": {
-    "calls": [
-      "ts-ticketinfo-service-with-jaeger",
-      "ts-route-service-with-jaeger"
-    ]
-  },
-  "ts-travel2-service": {
     "calls": []
   },
-  "ts-travel2-service-with-jaeger": {
+  "ts-travel2-service": {
     "calls": [
-      "ts-ticketinfo-service-with-jaeger"
+      "ts-ticketinfo-service",
+      "ts-route-service"
     ]
+  },
+  "ts-travel2-service-with-jaeger": {
+    "calls": []
   },
   "ts-ui-dashboard": {
     "calls": [
-      "ts-travel-service",
       "ts-station-service",
-      "ts-train-service",
-      "ts-auth-service"
-    ]
-  },
-  "ts-ui-dashboard-with-jaeger": {
-    "calls": [
-      "ts-assurance-service-with-jaeger",
-      "ts-order-other-service-with-jaeger",
-      "ts-travel2-service-with-jaeger",
-      "ts-travel-plan-service-with-jaeger",
-      "ts-contacts-service-with-jaeger",
-      "ts-travel-service-with-jaeger",
-      "ts-cancel-service-with-jaeger",
-      "ts-inside-payment-service-with-jaeger",
-      "ts-admin-basic-info-service-with-jaeger",
-      "ts-food-service-with-jaeger",
-      "ts-consign-service-with-jaeger",
-      "ts-admin-travel-service-with-jaeger",
-      "ts-rebook-service-with-jaeger",
-      "ts-auth-service-with-jaeger",
-      "ts-execute-service-with-jaeger"
+      "ts-order-service",
+      "ts-user-service",
+      "ts-auth-service",
+      "ts-train-service"
     ]
   },
   "ts-user-service": {

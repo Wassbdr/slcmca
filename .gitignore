@@ -35,3 +35,7 @@ conference_101719.pdf
 # IEEEtran class/bst (third-party, from CTAN — not ours to vendor)
 IEEEtran.cls
 IEEEtran.bst
+
+# regenerable sweep/indep eval artifacts (scripts/sweep_study.py, indep_study.py)
+fixtures/eval_realistic_sweep/
+fixtures/eval_realistic_indep/

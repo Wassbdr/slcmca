@@ -6,10 +6,15 @@ the **provenance evidence** for the paper's case study: they show the dependency
 discovered automatically from a live observability backend, not hand-written.
 
 They are **not** used for the reproducible case-study numbers. APM only records edges exercised
-during the observation window, so this capture is sparse (≈8 ts-* edges with traffic) and the
-per-service latency/availability is volatile. The reproducible figures come from the declared
+during the observation window, and several heavy endpoints time out under the shared cluster's
+load, so per-service latency/availability is noisy. The reproducible figures come from the declared
 topology (`fixtures/topology/train-ticket.yaml`, the full documented 85-edge call graph) with
 fixture metrics — see `scripts/case_study.py`.
+
+**The full live loop has been exercised end-to-end**: live topology discovery (38 ts-* services),
+live per-service trace latencies (11+ services with data), envelope computation over the typed DAG,
+and dashboard publication to Datadog (`slacheck publish --source live`). The published verdict
+dashboard: https://datadoghq.com/dashboard/gef-4qb-szk
 
 ## Consistency with the declared topology
 
@@ -31,6 +36,6 @@ kubectl port-forward -n tt-slacheck svc/ts-ui-dashboard 18080:8080 &
 DD_ENV=devolab slacheck record --out fixtures/datadog_live
 ```
 
-`slo_list.json` is absent because the app key lacks the `slos_read` scope (403); the pipeline does
-not require it. The k8s resource fixtures (`k8s_*.json`) are large real captures used by the cost
-and readiness-availability models.
+`slo_list.json` is now captured (the `slos_read` scope is granted); the pipeline does not require
+it. The k8s resource fixtures (`k8s_*.json`) are large real captures used by the cost and
+readiness-availability models.

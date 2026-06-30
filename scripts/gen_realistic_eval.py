@@ -16,9 +16,20 @@ service (the regime where uniform decomposition under-allocates and weighted dec
 not — exactly the v1-vs-v2 discriminator). The harness scripts/realistic_study.py then reports
 the fraction of the population where v2 detects the injected fault and v1 does not.
 
+Two injection modes (the actual victim cost is what makes a fault detectable):
+  - "window" (default): the victim cost is placed at a fixed POSITION inside the discriminating
+    window [weighted_threshold, uniform_threshold]. pos=0.5 reproduces the original dataset.
+    Sweeping pos in (0,1) traces a detection CURVE rather than a single constructed point — this
+    is what scripts/sweep_study.py consumes to show the result is not a tautology.
+  - "indep": the victim cost is drawn from a distribution INDEPENDENT of the two thresholds
+    (a log-normal perturbation around the uniform threshold), so the fault is NOT engineered to
+    fall in the v2-only window. The detection rate this yields is an unconstructed measurement.
+
 Deterministic: a fixed PRNG seed makes the dataset fully reproducible. Run:
-    python scripts/gen_realistic_eval.py            # default N=500
-    python scripts/gen_realistic_eval.py 1000       # custom N
+    python scripts/gen_realistic_eval.py                      # N=500, window mode, pos=0.5
+    python scripts/gen_realistic_eval.py 200                  # custom N
+    python scripts/gen_realistic_eval.py 200 0.5 window OUT   # explicit: N, pos, mode, out-subdir
+    python scripts/gen_realistic_eval.py 200 0.0 indep  OUT   # independent-distribution dataset
 """
 
 from __future__ import annotations
@@ -32,7 +43,8 @@ import yaml
 REPO = Path(__file__).resolve().parents[1]
 # all scenarios are Sub-SLO faults → write under a sub_slo/ subdir so eval/runner.run_eval
 # (which expects category subdirs) can consume this dataset directly.
-OUT = REPO / "fixtures" / "eval_realistic" / "sub_slo"
+FIXTURES = REPO / "fixtures"
+DEFAULT_OUT_SUBDIR = "eval_realistic"  # the headline dataset locked by tests
 SEED = 20260630  # fixed → reproducible dataset
 
 sys.path.insert(0, str(REPO / "src"))
@@ -81,11 +93,20 @@ def _entrypoint(names: list[str], edges: list[tuple[str, str]]) -> str:
 
 
 def _inject_sub_slo_fault(
-    rng: random.Random, names: list[str], edges: list[tuple[str, str]], entry: str
+    rng: random.Random,
+    names: list[str],
+    edges: list[tuple[str, str]],
+    entry: str,
+    pos: float = 0.5,
+    mode: str = "window",
 ) -> dict | None:
-    """Pick a low-centrality (in-degree 0) non-entry service and set its cost between the
-    uniform (lenient) and weighted (stricter) thresholds, so ONLY v2 flags it. Returns the
-    scenario dict, or None if the graph has no acyclic structure to decompose."""
+    """Pick a low-centrality non-entry service and set its cost so a Sub-SLO over-commitment exists.
+
+    ``mode="window"``: the cost is placed at fractional position ``pos`` inside the discriminating
+    window [weighted, uniform] (pos=0.5 = original dataset). ``mode="indep"``: the cost is drawn
+    from a log-normal perturbation around the uniform threshold, independent of the window — so the
+    fault is not engineered to be v2-only. Returns the scenario dict, or None if the graph has no
+    acyclic structure to decompose / no suitable victim."""
     # build an acyclic view to compute thresholds (drop back-edges by index order)
     idx = {n: k for k, n in enumerate(names)}
     acyclic = [(u, v) for u, v in edges if idx[u] < idx[v]]
@@ -103,14 +124,22 @@ def _inject_sub_slo_fault(
     thr_v1 = {t.component: t.required.cost_eur_h for t in _decompose_v1(T, list(comps.keys()))}
     thr_v2 = {t.component: t.required.cost_eur_h for t in _decompose_v2(T, g)}
 
-    # Victim = a low-centrality service (below-average in-degree) where the weighted threshold is
-    # STRICTER than the uniform one. Its actual cost sits between the two → only v2 flags it.
+    # Victim = a low-centrality service where the weighted threshold is STRICTER than the uniform.
     candidates = [n for n in names if n != entry and thr_v2[n] < thr_v1[n]]
     if not candidates:
         return None
     victim = candidates[rng.randrange(len(candidates))]
     uniform, weighted = thr_v1[victim], thr_v2[victim]
-    actual = round(weighted + (uniform - weighted) * 0.5, 3)  # strictly between the two
+
+    if mode == "indep":
+        # Cost drawn independently of the [weighted, uniform] window: a multiplicative log-normal
+        # perturbation around the uniform threshold. We keep only scenarios that are an actual
+        # over-commitment (actual > weighted), i.e. a real Sub-SLO fault exists to be detected.
+        actual = round(uniform * rng.lognormvariate(0.0, 0.25), 3)
+        if actual <= weighted:
+            return None  # no fault present under either method → not a detection scenario
+    else:  # "window"
+        actual = round(weighted + (uniform - weighted) * pos, 3)  # at position pos in the window
 
     slos = {n: {"cost_eur_h": 1.0} for n in names}
     slos[victim] = {"cost_eur_h": actual}
@@ -130,29 +159,44 @@ def _inject_sub_slo_fault(
     }
 
 
-def main(n_target: int) -> None:
+def generate(
+    n_target: int, pos: float = 0.5, mode: str = "window", out_subdir: str = DEFAULT_OUT_SUBDIR
+) -> tuple[int, Path]:
+    """Generate n_target scenarios into fixtures/<out_subdir>/sub_slo/. Returns (written, dir)."""
+    out = FIXTURES / out_subdir / "sub_slo"
     rng = random.Random(SEED)
-    OUT.mkdir(parents=True, exist_ok=True)
-    for f in OUT.glob("*.yaml"):
+    out.mkdir(parents=True, exist_ok=True)
+    for f in out.glob("*.yaml"):
         f.unlink()
     written = 0
     attempts = 0
-    while written < n_target and attempts < n_target * 20:
+    while written < n_target and attempts < n_target * 40:
         attempts += 1
         size = _sample_size(rng)
         names, edges = _build_topology(rng, size)
         entry = _entrypoint(names, edges)
-        scenario = _inject_sub_slo_fault(rng, names, edges, entry)
+        scenario = _inject_sub_slo_fault(rng, names, edges, entry, pos=pos, mode=mode)
         if scenario is None:
             continue
         written += 1
-        (OUT / f"realistic_{written:04d}.yaml").write_text(
+        (out / f"realistic_{written:04d}.yaml").write_text(
             "# Auto-generated realistic scenario. See scripts/gen_realistic_eval.py.\n"
             + yaml.safe_dump(scenario, sort_keys=False)
         )
-    print(f"wrote {written} realistic scenarios to {OUT} (seed={SEED}, attempts={attempts})")
+    return written, out
+
+
+def main(n_target: int, pos: float, mode: str, out_subdir: str) -> None:
+    written, out = generate(n_target, pos=pos, mode=mode, out_subdir=out_subdir)
+    print(
+        f"wrote {written} realistic scenarios to {out} "
+        f"(seed={SEED}, mode={mode}, pos={pos})"
+    )
 
 
 if __name__ == "__main__":
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 500
-    main(n)
+    pos = float(sys.argv[2]) if len(sys.argv) > 2 else 0.5
+    mode = sys.argv[3] if len(sys.argv) > 3 else "window"
+    out_subdir = sys.argv[4] if len(sys.argv) > 4 else DEFAULT_OUT_SUBDIR
+    main(n, pos, mode, out_subdir)
