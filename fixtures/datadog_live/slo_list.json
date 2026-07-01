@@ -126,8 +126,8 @@
       "modified_at": 1777454956,
       "monitor_tags": [],
       "query": {
-        "denominator": "sum:synthetics.http.response{status_code_class:* ,service:gitlab,env:devolab} by {url}.as_count()",
-        "numerator": "sum:synthetics.http.response{status_code_class:2xx ,service:gitlab,env:devolab} by {url}.as_count()"
+        "denominator": "sum:synthetics.http.response{status_code_class:* ,service:gitlab,env:sandbox} by {url}.as_count()",
+        "numerator": "sum:synthetics.http.response{status_code_class:2xx ,service:gitlab,env:sandbox} by {url}.as_count()"
       },
       "sli_specification": {
         "count": {
@@ -138,12 +138,12 @@
             {
               "data_source": "metrics",
               "name": "query1",
-              "query": "sum:synthetics.http.response{status_code_class:2xx ,service:gitlab,env:devolab} by {url}.as_count()"
+              "query": "sum:synthetics.http.response{status_code_class:2xx ,service:gitlab,env:sandbox} by {url}.as_count()"
             },
             {
               "data_source": "metrics",
               "name": "query2",
-              "query": "sum:synthetics.http.response{status_code_class:* ,service:gitlab,env:devolab} by {url}.as_count()"
+              "query": "sum:synthetics.http.response{status_code_class:* ,service:gitlab,env:sandbox} by {url}.as_count()"
             }
           ],
           "total_events_formula": {
@@ -153,8 +153,8 @@
       },
       "tags": [
         "slo",
-        "env:devolab",
-        "team:devolab",
+        "env:sandbox",
+        "team:sandbox",
         "service:gitlab",
         "availability"
       ],
@@ -197,7 +197,7 @@
               {
                 "data_source": "metrics",
                 "name": "query1",
-                "query": "avg:synthetics.http.response.time{service:gitlab,env:devolab ,!metrics} by {url}"
+                "query": "avg:synthetics.http.response.time{service:gitlab,env:sandbox ,!metrics} by {url}"
               }
             ]
           },
@@ -205,9 +205,9 @@
         }
       },
       "tags": [
-        "env:devolab",
+        "env:sandbox",
         "slo",
-        "team:devolab",
+        "team:sandbox",
         "response_time",
         "service:gitlab"
       ],

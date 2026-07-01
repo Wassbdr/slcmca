@@ -38,6 +38,29 @@ def test_latex_table_is_paper_ready():
 
     latex = format_latex(run_eval(DATASET, "v1"), run_eval(DATASET, "v2"))
     assert "\\begin{table}" in latex and "\\end{table}" in latex
-    # the headline rows: v1 57 vs v2 60 Sub-SLO, v1 0 vs v2 43 reconfig
-    assert "Sub-SLO Inconsistencies & 60 & 57 & 60" in latex
-    assert "Reconfiguration Inconsistencies & 43 & 0 & 43" in latex
+    # Matches the paper's framing: ablated Baseline vs Full method (not "v1/v2"),
+    # with the injected/detected Total row. The code is the source of truth for tab:eval.
+    assert "\\textbf{Baseline} & \\textbf{Full}" in latex
+    assert "\\label{tab:eval}" in latex
+    # the headline rows: 57 vs 60 Sub-SLO, 0 vs 43 reconfig, and the 67/113 total.
+    assert "Sub-SLO Inconsistencies         & 60 & 57 & 60" in latex
+    assert "Reconfiguration Inconsistencies & 43 &  0 & 43" in latex
+    assert "\\textbf{Total}" in latex
+    assert "\\textbf{113} & \\textbf{67} & \\textbf{113}" in latex
+
+
+def test_latex_table_matches_the_paper_verbatim():
+    """The generated table must equal the tab:eval block in issre_paper.tex byte-for-byte.
+
+    This locks the promise that ``slacheck eval --both --latex`` regenerates the paper's
+    table: if the code's counts or the table shape drift from the paper, this fails.
+    """
+    from slacheck.eval.runner import format_latex
+
+    paper = (Path(__file__).resolve().parents[1] / "issre_paper.tex").read_text()
+    start = paper.index("\\begin{table}[htbp]\n\\caption{Fault detection across scenario")
+    end = paper.index("\\end{table}", start) + len("\\end{table}")
+    paper_block = paper[start:end]
+
+    generated = format_latex(run_eval(DATASET, "v1"), run_eval(DATASET, "v2"))
+    assert generated == paper_block

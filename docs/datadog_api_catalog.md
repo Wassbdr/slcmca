@@ -1,76 +1,62 @@
-# Datadog API catalog — what we can retrieve for slacheck
+# Datadog API catalog — what slacheck reads and writes
 
-**Phase 0 deliverable.** This is the supervisor's first ask: *"see what can be retrieved from the
-Datadog API"* so we can build a topology graph, extract a critical path, and publish a dashboard.
+Reference for how slacheck maps the paper's inputs to real Datadog endpoints: which calls build the
+topology graph, which produce per-service SLO values, where the gaps are, and how the verdict
+dashboard is published. Validated against the `train-ticket` benchmark (services `ts-*`, entrypoint
+`ts-gateway-service`) using [`datadog-api-client`](https://github.com/DataDog/datadog-api-client-python) v2.
 
-Cluster: `observit-cluster1`. App: `train-ticket` (services `ts-*`, entrypoint `ts-gateway-service`).
-SDK: [`datadog-api-client`](https://github.com/DataDog/datadog-api-client-python) v2.
+Run `slacheck record` to capture live responses into `fixtures/datadog/` and check them against the
+shapes below.
 
-> This document is written from the published API/SDK shapes. Run `slacheck record` to capture the
-> real responses into `fixtures/datadog/` and validate the shapes below.
+## Status of the live path
 
----
+The full loop runs live against a real train-ticket deployment: automatic topology discovery
+(38 `ts-*` services, ~58 edges), per-service p99 latency, the typed-DAG envelope, and dashboard
+publication via `slacheck publish --source live`. Notes worth keeping:
 
-## Live findings (probed 2026-06-23 against `observit-cluster1`)
+- **APM auth.** The SDK's low-level `call_api` does not attach Datadog auth headers — auth is applied
+  inside the generated API methods. Raw calls to the service-dependencies endpoint must pass
+  `DD-API-KEY` / `DD-APPLICATION-KEY` explicitly (handled in
+  `live_client._service_dependencies_apm`). An early "401 on APM" turned out to be this, not a
+  missing scope.
+- **Latency metric.** For this Java/Spring app the trace stat is `trace.servlet.request` (its
+  duration is the base metric), not `trace.http.request.duration`, and Datadog returns p99 in
+  **seconds** — converted to ms at the live edge only (fixtures are already in ms).
+- **Why the paper uses declared topology.** APM only records edges exercised during the observation
+  window, and several heavy endpoints time out under load, so live per-service metrics are noisy. The
+  reproducible case-study numbers therefore come from the declared topology
+  (`fixtures/topology/train-ticket.yaml`) with fixture metrics; the JSON in `fixtures/datadog_live/`
+  is provenance that the topology is discovered automatically, not hand-written.
 
-First contact with the real org. Run `slacheck doctor` then `slacheck record` to reproduce.
+Operational steps for pointing this at another org (traffic generation, scopes) are in
+`live_unblock.md`.
 
-| Check | Result | Implication |
-|---|---|---|
-| `GET /api/v1/validate` (`slacheck doctor`) | ✅ valid | API key + site OK |
-| **Site** | `datadoghq.com` (**US**, not EU) | `.env` must use `DD_SITE=datadoghq.com` |
-| APM `/api/v1/service_dependencies` | ✅ **200, but empty** (`{}`) for env prod/production/staging/dev/default | `apm_read` GRANTED and working; **no APM trace data visible** |
-| APM `/api/v2/services/definitions` | ✅ **0 services** | confirms no traced services in this key's view |
-| Software Catalog relations | ✅ reachable but **0 relations** | no declared `dependsOn` either |
-| Metrics timeseries (`query_metrics`, `list_active_metrics`) | ❌ **403** | app key lacks `metrics_read` |
-| SLOs (`list_slos`) | ❌ **403** | app key lacks `slos_read` |
+## Required app-key scopes
 
-**Conclusion (revised):** the keys are valid and **`apm_read` is now working**. Two remaining blockers:
-1. **No APM data** — the service map and service definitions are *empty* for every env tried. Either
-   train-ticket is not emitting APM traces to this org, or it is traced under an account/env this key
-   cannot see. This is the **primary** blocker: with no topology there is nothing to build a graph from.
-2. **Missing `metrics_read` + `slos_read`** scopes on the app key (still 403). Needed for the SLO values
-   even once topology exists.
+The application key carries the permissions; request the scopes matching the features you need.
 
-> Gotcha discovered: the SDK's low-level `call_api` does **not** auto-attach Datadog auth — auth is
-> applied inside the *generated* API methods. Raw calls must pass `DD-API-KEY` / `DD-APPLICATION-KEY`
-> headers explicitly (fixed in `live_client._service_dependencies_apm`). The earlier "401 on APM" was
-> this bug, not a missing scope.
-
-**SDK reality:** `datadog-api-client` 2.56 does **not** ship a `service_dependencies_api`. slacheck
-calls the runtime topology endpoint via the SDK's low-level `ApiClient.call_api(...)`, with Software
-Catalog `dependsOn` relations as a fallback (see `src/slacheck/datadog/live_client.py`).
-
----
-
-## Access checklist — what to request from the supervisor
-
-| Item | Why |
+| Scope | Used for |
 |---|---|
-| `DD_API_KEY` | org-level API key, every request |
-| `DD_APP_KEY` | per-user application key — **carries the permission scopes** |
-| `DD_SITE` | **confirmed `datadoghq.com` (US)** for this org (was assumed EU) |
-| `DD_ENV` | APM env tag of train-ticket (`prod`/`production`/`staging`) — required param of the deps endpoint |
-| scope `apm_read` | service map / service dependencies |
-| scope `apm_service_catalog_read` | software catalog (declared dependencies) |
-| scope `metrics_read` | timeseries (latency p99, error rate, request rate) |
-| scope `slos_read` | existing SLOs |
-| scope `monitors_read` | existing monitors |
-| scope `dashboards_read` + `dashboards_write` | publish the verdict dashboard (Phase 4) |
-| confirm train-ticket emits **APM traces** | the Service Map is built from traces; no traces ⇒ no topology |
+| `apm_read` | service map / service dependencies (topology) |
+| `apm_service_catalog_read` | software catalog (declared dependencies, enrichment) |
+| `metrics_read` | timeseries: latency p99, error rate, request rate, k8s resources |
+| `slos_read` | existing SLOs (comparison only) |
+| `monitors_read` | existing monitors (context only) |
+| `dashboards_read`, `dashboards_write` | publish the verdict dashboard |
 
----
+The target app must actually emit APM traces — the service map is built from traces, so no traces
+means no topology.
 
 ## 1. Topology — service dependency graph
 
-The graph nodes + edges come from APM. This is the input that replaces the paper's hand-written YAML.
+Graph nodes and edges come from APM. This replaces the paper's hand-written YAML.
 
-### 1a. Service Dependencies (primary)
-- **Endpoint:** `GET /api/v1/service_dependencies?env=<env>` (APM Service Map adjacency)
-- **SDK:** ⚠️ no codegen'd class in `datadog-api-client` 2.x. Called via low-level
-  `ApiClient.call_api("/api/v1/service_dependencies", "GET", query_params=[("env", env)], ...)`.
-  Requires `apm_read` (currently returns 401 — see Live findings).
-- **Shape (per service → its downstream calls):**
+### 1a. Service dependencies (primary)
+
+- Endpoint: `GET /api/v1/service_dependencies?env=<env>` (APM Service Map adjacency).
+- `datadog-api-client` 2.x has no generated class for this, so slacheck calls it through the SDK's
+  low-level `ApiClient.call_api("/api/v1/service_dependencies", "GET", query_params=[("env", env)], ...)`.
+- Shape (per service, its downstream calls):
   ```json
   {
     "ts-gateway-service": { "calls": ["ts-travel-service", "ts-order-service"] },
@@ -78,95 +64,91 @@ The graph nodes + edges come from APM. This is the input that replaces the paper
     "ts-route-service":   { "calls": [] }
   }
   ```
-- **→ slacheck:** each `service → callee` becomes a directed edge in `nx.DiGraph`
-  (`datadog/topology.py`). Cycles (retries, shared utils) are broken to a DAG in `graph/builder.py`.
+- Each `service → callee` becomes a directed edge in `nx.DiGraph` (`datadog/topology.py`). Cycles
+  (retries, shared utilities) are broken into a DAG in `graph/builder.py`.
 
-### 1b. Software / Service Catalog (enrichment, optional)
-- **SDK (v2):** `software_catalog_api.SoftwareCatalogApi.list_catalog_entities()` /
-  service definitions `service_definition_api.ServiceDefinitionApi.list_service_definitions()`.
-- Gives **declared** `dependsOn`, ownership, tier, links. Used to enrich/validate the runtime map
-  when traces are sparse. Not the source of truth for the live graph.
+### 1b. Software catalog (optional enrichment)
 
----
+- SDK v2: `SoftwareCatalogApi.list_catalog_entities()` / `ServiceDefinitionApi.list_service_definitions()`.
+- Gives declared `dependsOn`, ownership, tier, links — used to enrich or validate the runtime map
+  when traces are sparse, not as the source of truth for the live graph.
 
-## 2. Metrics → Sub-SLO values
+## 2. Metrics — per-service SLO values
 
 Per service, over a window, via timeseries query. These produce the `SloValues` the paper needs.
 
-- **SDK (v2):** `metrics_api.MetricsApi.query_timeseries_data(...)` (POST `/api/v2/query/timeseries`)
-  or **(v1):** `metrics_api.MetricsApi.query_metrics(_from=..., to=..., query=...)`
-  (GET `/api/v1/query`).
+- SDK v2: `MetricsApi.query_timeseries_data(...)` (POST `/api/v2/query/timeseries`), or v1:
+  `MetricsApi.query_metrics(_from=..., to=..., query=...)` (GET `/api/v1/query`).
 
 | Paper Sub-SLO | Datadog query (per service `X`) | Conversion |
 |---|---|---|
-| `response_time_ms` | `p99:trace.http.request.duration{service:X}` (or `trace.servlet.request.duration`) | duration is **ns** → ÷ 1e6 to ms (or s → ×1000) |
-| availability inputs | hits: `sum:trace.http.request.hits{service:X}.as_count()` ; errors: `sum:trace.http.request.errors{service:X}.as_count()` | `availability_pct = (1 - errors/hits) * 100` |
-| request rate (context) | `sum:trace.http.request.hits{service:X}.as_rate()` | informational + denominator sanity |
+| `response_time_ms` | `p99:trace.servlet.request{service:X}` (or `trace.http.request.duration`) | seconds → ms (×1000); if a duration is in ns, ÷ 1e6 |
+| availability inputs | hits `sum:trace.http.request.hits{service:X}.as_count()`, errors `sum:trace.http.request.errors{service:X}.as_count()` | `availability_pct = (1 - errors/hits) * 100` |
+| request rate (context) | `sum:trace.http.request.hits{service:X}.as_rate()` | informational, denominator sanity check |
 
-> The exact metric namespace depends on train-ticket's instrumentation (`trace.http.request.*`,
-> `trace.servlet.request.*`, or OTel `trace.*`). `slacheck record` dumps `slo_list.json` and a sample
-> timeseries so we can confirm the real metric names before wiring `datadog/metrics.py`.
+The exact namespace depends on the app's instrumentation (`trace.http.request.*`,
+`trace.servlet.request.*`, or OTel `trace.*`); `slacheck record` dumps a sample timeseries so the
+real metric names can be confirmed before wiring `datadog/metrics.py`.
 
-**Availability caveat:** `(1 - errors/requests)*100` is a **request-success proxy**, not true uptime.
-Surfaced in the verdict and dashboard note.
+Availability here is `(1 - errors/requests) * 100` — a request-success proxy, not true uptime. This
+is surfaced in the verdict and the dashboard note.
 
----
+## 3. Existing SLOs and monitors (reference only)
 
-## 3. Existing SLOs & Monitors (reference, not required)
-- **SLOs (v1):** `service_level_objectives_api.ServiceLevelObjectivesApi.list_slos()` →
-  GET `/api/v1/slo`. Lets us compare *our computed envelope* against SLOs the team already declared.
-- **Monitors (v1):** `monitors_api.MonitorsApi.list_monitors()` → GET `/api/v1/monitor`. Context on
-  what's alerting; not used in the envelope math.
+- SLOs (v1): `ServiceLevelObjectivesApi.list_slos()` (GET `/api/v1/slo`) — lets slacheck compare its
+  computed envelope against SLOs the team already declared.
+- Monitors (v1): `MonitorsApi.list_monitors()` (GET `/api/v1/monitor`) — context on what is alerting;
+  not used in the envelope math.
 
----
+## 4. Kubernetes resources
 
-## 4. Infrastructure / Kubernetes — IMPLEMENTED (works without APM)
-- **Hosts (v1):** `hosts_api.HostsApi.list_hosts()` → GET `/api/v1/hosts`.
-- **Container/k8s metrics — confirmed live (2026-06-24), 64–65 series for `tt-slacheck`:**
-  | signal | query (grouped by `kube_deployment` == service name) |
+Infrastructure signals available even when APM tracing is sparse.
+
+- Hosts (v1): `HostsApi.list_hosts()` (GET `/api/v1/hosts`).
+- Container/k8s metrics, grouped by `kube_deployment` (which matches the service name):
+
+  | signal | query |
   |---|---|
   | CPU (nanocores) | `avg:kubernetes.cpu.usage.total{kube_namespace:<ns>} by {kube_deployment}` |
   | memory (bytes) | `avg:kubernetes.memory.usage{kube_namespace:<ns>} by {kube_deployment}` |
   | restarts | `sum:kubernetes.containers.restarts{kube_namespace:<ns>} by {kube_deployment}` |
-- Wired into slacheck: `live_client.k8s_metric_series`, `metrics.collect_k8s_metrics` →
-  `Component.resources` (`ResourceMetrics`), surfaced in the dashboard "Resource Health (k8s)" group.
-  **This is the live signal available today while APM trace ingestion is blocked** (see Live findings).
-- Also relevant for the **operational translation** (paper §IV.D: throughput SLO → CPU>80% trigger).
 
----
+Wired via `live_client.k8s_metric_series` / `metrics.collect_k8s_metrics` into `Component.resources`
+(`ResourceMetrics`), shown in the dashboard's "Resource Health (k8s)" group. These also feed the
+operational translation (paper §IV.D: throughput SLO → CPU > 80% trigger).
 
-## 5. Cost — the gap and two stand-ins (do not fake it)
-- **Cloud Cost Management (v2):** `cloud_cost_management_api.*` → cloud-bill cost by AWS/GCP/Azure
-  account/tag. **This is the cloud invoice, not per-microservice EUR/h** — and it returns 0 series on
-  this org (not enabled). Mapping a bill line to `ts-auth-service` is not something Datadog gives.
-- **Stand-in A — k8s resource cost model (live, automatic).** `kubernetes.cpu.requests` (cores) and
-  `kubernetes.memory.requests` (bytes) DO flow live (64 series). slacheck estimates
+## 5. Cost — the gap and two stand-ins
+
+Datadog does not expose per-microservice cost. Cloud Cost Management (`cloud_cost_management_api.*`)
+returns the cloud bill by account/tag, not a per-service EUR/h, and mapping a bill line to a service
+is not something the API provides. slacheck never fabricates a cost:
+
+- **k8s resource model (live, automatic).** `kubernetes.cpu.requests` (cores) and
+  `kubernetes.memory.requests` (bytes) flow live, so slacheck estimates
   `cost_eur_h ≈ cpu_cores·cpu_eur_per_core_h + mem_gb·mem_eur_per_gb_h` from a `pricing.yaml`
-  (`models.Pricing`, `metrics.k8s_cost_model`, `--pricing`). A **reservation estimate, not a bill** —
-  but live and per-service, symmetric to the availability readiness proxy.
-- **Stand-in B — declared overrides (exact).** `cost_overrides.yaml` (per-service EUR/h, hand-supplied
-  like the paper's YAML) takes precedence when present.
-- **→ slacheck:** `cost_eur_h` is `None` unless `--pricing` (model) or `--cost-overrides` (exact) is
-  given; the verdict notes the source (`cost_source: k8s_resource_model`). Never a fabricated bill.
+  (`models.Pricing`, `metrics.k8s_cost_model`, `--pricing`). A reservation estimate, not a bill, but
+  live and per-service — symmetric to the availability readiness proxy.
+- **Declared overrides (exact).** `cost_overrides.yaml` (per-service EUR/h, hand-supplied like the
+  paper's YAML) takes precedence when present.
 
----
+`cost_eur_h` stays `None` unless `--pricing` or `--cost-overrides` is given, and the verdict records
+the source (e.g. `cost_source: k8s_resource_model`).
 
-## 6. Dashboard publishing (Phase 4)
-- **SDK (v1):** `dashboards_api.DashboardsApi.create_dashboard(body=...)` → POST `/api/v1/dashboard`;
+## 6. Dashboard publishing
+
+- SDK v1: `DashboardsApi.create_dashboard(body=...)` (POST `/api/v1/dashboard`), with
   `update_dashboard` for idempotent re-push (search by title first). Needs `dashboards_write`.
-- Widgets we push: a **note** widget with the envelope verdict (green/red), a **group** of timeseries
-  per critical-path service (reusing the queries in §2), a **group** of fault notes, and a topology
-  note. Built as a plain dict in `dashboard/builder.py` (testable offline), pushed by `publisher.py`.
+- Widgets: a note with the envelope verdict, a group of per-service timeseries (reusing the §2
+  queries), a group of fault notes, and a topology note. Built as a plain dict in
+  `dashboard/builder.py` (testable offline), pushed by `publisher.py`.
 
----
-
-## Summary: what maps to what
+## Summary
 
 | slacheck needs | Datadog source | Available? |
 |---|---|---|
-| graph nodes + edges | Service Dependencies (§1a) | ✅ (needs APM traces) |
-| response_time per service | p99 trace duration (§2) | ✅ |
-| availability per service | error/hit counts (§2) | ✅ (proxy, not uptime) |
-| request rate | trace hits as_rate (§2) | ✅ |
-| per-service cost | — | ❌ gap → manual overrides |
-| publish dashboard | Dashboards API (§6) | ✅ (needs `dashboards_write`) |
+| graph nodes + edges | service dependencies (§1a) | yes (needs APM traces) |
+| response time per service | p99 trace duration (§2) | yes |
+| availability per service | error/hit counts (§2) | yes (success proxy, not uptime) |
+| request rate | trace hits as_rate (§2) | yes |
+| per-service cost | — | no direct source (§5 stand-ins) |
+| publish dashboard | Dashboards API (§6) | yes (needs `dashboards_write`) |

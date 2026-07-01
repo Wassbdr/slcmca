@@ -1,4 +1,4 @@
-# Unblocking the live Datadog path (A5)
+# Unblocking the live Datadog path
 
 The paper's case-study numbers are computed from the **declared** train-ticket topology with fixture
 metrics, because (a) live traffic during the observation window was too sparse for per-service
@@ -8,9 +8,9 @@ operational, not code. This file is the runbook to close them.
 
 ## 1. Datadog scopes (supervisor action)
 
-Current app-key returns: APM topology OK, but **metrics_read / slos_read / dashboards_read /
-dashboards_write = 403**. Ask the supervisor to add these scopes to the app-key used in `.env`
-(org `devolab`, site `datadoghq.com`). Then verify without printing the key:
+If the app-key is missing scopes (e.g. **metrics_read / slos_read / dashboards_read /
+dashboards_write = 403**), add them to the app-key used in `.env` for your org and site. Then
+verify without printing the key:
 
 ```bash
 slacheck doctor          # must report all scopes green
@@ -25,18 +25,19 @@ The agent only emits spans for serviced requests; with no traffic the service ma
 `datadog/live_client.py`) never aggregates. Drive a few minutes of load:
 
 ```bash
-kubectl port-forward -n tt-slacheck svc/ts-ui-dashboard 18080:8080 &
+kubectl port-forward -n <namespace> svc/ts-ui-dashboard 18080:8080 &
 # then loop login + travel queries for ~2-3 min (booking flow exercises the hub services:
 # ts-order, ts-station, ts-travel, ts-route, ts-seat), and wait ~90s for aggregation.
 ```
 
-Do **not** trigger a mass rollout of `tt-slacheck` (42 deploys saturates containerd).
+Avoid triggering a mass rollout of the app's namespace (a large simultaneous restart can saturate
+the container runtime).
 
 ## 3. Capture, analyse live, publish
 
 ```bash
-DD_ENV=devolab slacheck record --out fixtures/datadog_live          # seed real fixtures
-DD_ENV=devolab slacheck analyze --source live --paper-version v2 \
+DD_ENV=<your-env> slacheck record --out fixtures/datadog_live       # seed real fixtures
+DD_ENV=<your-env> slacheck analyze --source live --paper-version v2 \
     -e ts-ui-dashboard -c latency --service-prefix ts- \
     --exclude-contains with-jaeger \
     --pricing fixtures/scenarios/pricing.example.yaml                # live latency once dense enough
@@ -52,6 +53,5 @@ establishes topological provenance only.
 
 - Replace the §VI-B latency-target sentence's provenance caveat with a live measurement.
 - Add the published dashboard URL/screenshot (the JSON is already exported to
-  `artifacts/dashboard_train-ticket_devolab.json`, importable via Datadog UI → Import in the
-  meantime).
+  `artifacts/dashboard_train-ticket.json`, importable via Datadog UI → Import in the meantime).
 - Soften the §VII "live traffic was sparse" threat accordingly.

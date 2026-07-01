@@ -6,8 +6,8 @@
 
 This implements and extends the ISSRE 2026 paper *"What SLA Can I Commit To? Computing Achievable
 Service-Level Objectives for Multi-Cloud Applications"*. The paper's `slacheck` works on a
-hand-written YAML topology; this tool builds the topology **automatically from Datadog** (cluster
-`observit-cluster1`, app `train-ticket`) and presents the result back inside Datadog.
+hand-written YAML topology; this tool builds the topology **automatically from Datadog** (validated
+on the `train-ticket` benchmark) and presents the result back inside Datadog.
 
 ## How it works
 
@@ -45,7 +45,15 @@ slacheck publish --source live --entrypoint ts-gateway-service --constraint late
 
 ## Reproducing the empirical evaluation
 
-All three evaluation levels in the paper are reproducible **offline**, no credentials:
+Everything in `issre_paper.tex` is reproducible **offline**, no credentials. One command runs the
+whole thing (datasets → tables → figures) and echoes each paper claim next to the code's output:
+
+```bash
+python scripts/reproduce_paper.py     # or: make reproduce
+make eval                             # just Table I (tab:eval) as paste-ready LaTeX
+```
+
+The individual levels, if you want them one at a time:
 
 ```bash
 # 1. Real-world case study — train-ticket (38 services), v1 vs v2:
@@ -71,4 +79,4 @@ only) is documented in [fixtures/datadog_live/README.md](fixtures/datadog_live/R
 - [docs/datadog_api_catalog.md](docs/datadog_api_catalog.md) — **start here**: what Datadog exposes,
   the exact API calls, metric→SLO conversions, and known gaps.
 - [docs/paper_mapping.md](docs/paper_mapping.md) — paper section → code module mapping.
-- [CLAUDE.md](CLAUDE.md) — architecture rules, commands, conventions.
+- [docs/live_unblock.md](docs/live_unblock.md) — runbook for pointing the live path at another org.

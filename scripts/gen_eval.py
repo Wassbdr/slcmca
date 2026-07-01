@@ -23,7 +23,8 @@ from pathlib import Path
 
 import yaml
 
-ROOT = Path("/home/wassimbadraoui/repos/slcmca/fixtures/eval")
+REPO = Path(__file__).resolve().parents[1]
+ROOT = REPO / "fixtures" / "eval"
 
 
 def dump(category: str, name: str, doc: dict) -> None:
@@ -68,7 +69,7 @@ for i in range(1, 11):
 # topology size / metric / target keep the scenarios distinct (not clones).
 import sys
 
-sys.path.insert(0, str(Path("/home/wassimbadraoui/repos/slcmca/src")))
+sys.path.insert(0, str(REPO / "src"))
 from slacheck.envelope.decompose import decompose as _decompose_v1  # noqa: E402
 from slacheck.envelope.v2.decompose_v2 import decompose_v2 as _decompose_v2  # noqa: E402
 from slacheck.models import (  # noqa: E402

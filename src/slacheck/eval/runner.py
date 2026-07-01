@@ -149,26 +149,49 @@ def format_table(report: EvalReport, paper_version: str) -> str:
 
 
 def format_latex(v1: EvalReport, v2: EvalReport) -> str:
-    """Render a paper-ready LaTeX table comparing v1 and v2 detection (paper Table I)."""
+    """Render the paper's Table I (``tab:eval``) from live detection counts.
+
+    The code is the single source of truth for this table: the output is meant to be pasted
+    verbatim into ``issre_paper.tex``. It therefore matches the paper's framing exactly —
+    columns are the ablated **Baseline** (v1) and the **Full** method (v2), not "v1/v2" — and
+    includes the injected/detected **Total** row. Regenerate with ``slacheck eval --both --latex``.
+    """
     rows = []
+    total_inj = total_d1 = total_d2 = 0
+    # Left-align the category label to the paper's column width for a clean, stable diff.
+    width = max(len(lbl) for lbl in _LABELS.values())
     for cat in CATEGORIES:
-        inj = v2.injected(cat)  # injected count is the same for both
+        inj = v2.injected(cat)  # injected count is the same for both engines
         d1 = v1.detected(cat)
         d2 = v2.detected(cat)
-        rows.append(f"{_LABELS[cat]} & {inj} & {d1} & {d2} \\\\")
+        total_inj += inj
+        total_d1 += d1
+        total_d2 += d2
+        rows.append(f"{_LABELS[cat]:<{width}} & {inj} & {d1:>2} & {d2} \\\\")
     body = "\n".join(rows)
+    total_cell = "\\textbf{Total}"
+    total_label = f"{total_cell:<{width}}"
+    total = (
+        f"{total_label} & "
+        f"\\textbf{{{total_inj}}} & \\textbf{{{total_d1}}} & \\textbf{{{total_d2}}} \\\\"
+    )
     return (
-        "\\begin{table}[t]\n"
-        "\\centering\n"
-        "\\caption{Fault detection across scenario categories (v1 vs.\\ v2).}\n"
-        "\\label{tab:eval}\n"
-        "\\begin{tabular}{lccc}\n"
+        "\\begin{table}[htbp]\n"
+        "\\caption{Fault detection across scenario categories: "
+        "ablated baseline vs.\\ full method.}\n"
+        "\\begin{center}\n"
+        "\\begin{tabular}{|l|c|c|c|}\n"
         "\\hline\n"
-        "Scenario Category & Injected & v1 Det. & v2 Det. \\\\\n"
+        "\\textbf{Scenario Category} & \\textbf{Injected} &\n"
+        "\\textbf{Baseline} & \\textbf{Full} \\\\\n"
         "\\hline\n"
         f"{body}\n"
         "\\hline\n"
+        f"{total}\n"
+        "\\hline\n"
         "\\end{tabular}\n"
+        "\\label{tab:eval}\n"
+        "\\end{center}\n"
         "\\end{table}"
     )
 
