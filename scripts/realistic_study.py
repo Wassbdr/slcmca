@@ -1,4 +1,4 @@
-"""Statistical v1-vs-v2 validation on the realistic population (paper §VI-C).
+"""Statistical v1-vs-v2 validation on the realistic population (paper §V-C).
 
 Runs the realistic dataset (scripts/gen_realistic_eval.py — topologies drawn from Alibaba-like
 distributions) through both engines and reports, over the whole population:

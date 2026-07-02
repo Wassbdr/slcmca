@@ -115,7 +115,7 @@ Infrastructure signals available even when APM tracing is sparse.
 
 Wired via `live_client.k8s_metric_series` / `metrics.collect_k8s_metrics` into `Component.resources`
 (`ResourceMetrics`), shown in the dashboard's "Resource Health (k8s)" group. These also feed the
-operational translation (paper §IV.D: throughput SLO → CPU > 80% trigger).
+operational translation (paper §III-D: throughput SLO → CPU > 80% trigger).
 
 ## 5. Cost — the gap and two stand-ins
 

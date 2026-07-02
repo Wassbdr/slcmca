@@ -1,12 +1,13 @@
-# Unblocking the live Datadog path
+# Running the live Datadog path against another org
 
-The paper's case-study numbers are computed from the **declared** train-ticket topology with fixture
-metrics, because (a) live traffic during the observation window was too sparse for per-service
-latency to aggregate, and (b) the app-key lacks the scopes needed to read metrics/SLOs and to publish
-the dashboard. The pipeline itself runs live (topology discovery works); these two gaps are
-operational, not code. This file is the runbook to close them.
+The full live loop has been exercised end-to-end on our deployment (topology discovery, live trace
+latencies, envelope computation, dashboard publication — see `fixtures/datadog_live/README.md`).
+The paper's reproducible case-study numbers still come from the **declared** train-ticket topology
+with fixture metrics, because live per-service latency is only as good as the traffic that feeds it
+(paper §IV, lesson L3). This file is the runbook for pointing the live path at a **different**
+Datadog org — e.g. to replicate the loop on your own cluster.
 
-## 1. Datadog scopes (supervisor action)
+## 1. Datadog scopes
 
 If the app-key is missing scopes (e.g. **metrics_read / slos_read / dashboards_read /
 dashboards_write = 403**), add them to the app-key used in `.env` for your org and site. Then
@@ -22,12 +23,15 @@ See `docs/datadog_api_catalog.md` → "Access checklist" for the exact scope nam
 
 The agent only emits spans for serviced requests; with no traffic the service map is empty and
 `trace.servlet.request` (the real Java/Spring trace metric, in **seconds** → converted to ms in
-`datadog/live_client.py`) never aggregates. Drive a few minutes of load:
+`datadog/live_client.py`) never aggregates. Drive sustained load (paper §IV, lesson L1 — the
+default head-based trace sampling needs both volume and, if necessary, a forced sample rate; see
+`scripts/loadgen/`):
 
 ```bash
 kubectl port-forward -n <namespace> svc/ts-ui-dashboard 18080:8080 &
-# then loop login + travel queries for ~2-3 min (booking flow exercises the hub services:
-# ts-order, ts-station, ts-travel, ts-route, ts-seat), and wait ~90s for aggregation.
+scripts/loadgen/run_bash_load.sh 1800    # or the locustfile for higher RPS
+# the booking flow exercises the hub services: ts-order, ts-station, ts-travel, ts-route, ts-seat;
+# wait ~90s for aggregation.
 ```
 
 Avoid triggering a mass rollout of the app's namespace (a large simultaneous restart can saturate
@@ -47,11 +51,4 @@ slacheck publish --source live ...                                  # needs dash
 If `analyze -c latency` is still sparse (fewer than ~8 services reporting `trace.servlet.request`
 duration), generate more successful traffic and re-`record`; this is why the paper's reproducible
 latency figures come from the deterministic declared-topology fixtures while the live capture
-establishes topological provenance only.
-
-## 4. What changes in the paper once unblocked
-
-- Replace the §VI-B latency-target sentence's provenance caveat with a live measurement.
-- Add the published dashboard URL/screenshot (the JSON is already exported to
-  `artifacts/dashboard_train-ticket.json`, importable via Datadog UI → Import in the meantime).
-- Soften the §VII "live traffic was sparse" threat accordingly.
+establishes topological provenance.

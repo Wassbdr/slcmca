@@ -1,4 +1,4 @@
-"""Ascending aggregation: a series path of components → the guaranteeable Envelope (paper §IV.B)."""
+"""Ascending aggregation: a series path of components → the guaranteeable Envelope (§III-B)."""
 
 from __future__ import annotations
 

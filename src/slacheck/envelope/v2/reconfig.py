@@ -1,4 +1,4 @@
-"""Reconfiguration sustainability under elasticity (paper-v2 §IV.E).
+"""Reconfiguration sustainability under elasticity (paper §III-D).
 
 SLOs are high-level (e.g. throughput); elasticity triggers are low-level operational
 parameters (e.g. CPU%). A knowledge base translates the SLO into the operational predicate

@@ -1,9 +1,9 @@
-"""Structural-weight decomposition (paper-v2 §IV.D).
+"""Structural-weight decomposition (paper §III-C).
 
 Instead of the uniform 1/n split (paper-v1), the global target is apportioned by each
 component's structural centrality: wᵢ = (1 + deg⁻(i)) / Σⱼ(1 + deg⁻(j)), where deg⁻ is the
 in-degree. A component depended on by many others carries a larger share. This closes the
-3 Sub-SLO faults that uniform distribution misses (paper §VI).
+3 Sub-SLO faults that uniform distribution misses (paper §V).
 """
 
 from __future__ import annotations

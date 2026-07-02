@@ -1,4 +1,4 @@
-# Paper-v2 running case (§II.B + §IV). Typed DAG: UI -> Auth, UI -> Stor (both conjunctive),
+# Full-method (v2) running case (paper §II + §III). Typed DAG: UI -> Auth, UI -> Stor (both conjunctive),
 # each 99.9% availability. Adds per-component CSP tier/sigma (for the γ margin), a knowledge
 # base, and a reconfiguration strategy. Reproduces the paper's exact worked numbers:
 #   weights wUI=1/5, wAuth=wStor=2/5; cost T=23 -> sUI=4.6, sAuth=sStor=9.2; A* avail = 99.7.

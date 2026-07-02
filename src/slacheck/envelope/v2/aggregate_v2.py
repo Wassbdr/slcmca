@@ -1,4 +1,4 @@
-"""Topological aggregation over the typed DAG → the guaranteeable envelope (paper-v2 §IV.C).
+"""Topological aggregation over the typed DAG → the guaranteeable envelope (paper §III-B).
 
 Unlike paper-v1 (which reduces the DAG to one series path), v2 aggregates over the WHOLE
 graph following its topological order, selecting the operator per metric and per the
@@ -82,7 +82,7 @@ def _edge_type(edges: list[DependencyEdge], source: str, target: str) -> str:
 
 
 def _path_latency(graph: DependencyGraph) -> float | None:
-    """End-to-end latency, propagated bottom-up (paper-v2 §IV.C).
+    """End-to-end latency, propagated bottom-up (paper §III-B).
 
     Each node's effective latency = its own value + the combined latency of its providers:
     the worst (max) over conjunctive children (all must respond), and the responding (min)
@@ -112,7 +112,7 @@ def _path_latency(graph: DependencyGraph) -> float | None:
 
 
 def compute_envelope_v2(graph: DependencyGraph) -> Envelope:
-    """Aggregate the typed DAG into the achievable global envelope A* (paper-v2 §IV.C)."""
+    """Aggregate the typed DAG into the achievable global envelope A* (paper §III-B)."""
     if not graph.components:
         raise ValueError("compute_envelope_v2 requires a non-empty graph")
 

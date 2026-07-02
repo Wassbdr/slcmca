@@ -2,17 +2,17 @@
 
 Produces, under figures/:
   - detection_by_category.pdf : per-category fault detection, ablated baseline vs full method
-                                (constructed dataset, §VI-A).
+                                (constructed dataset, §V-A).
   - detection_realistic.pdf   : detection rate with Wilson 95% CI on the realistic population
-                                (Alibaba-like topologies, §VI-C).
+                                (Alibaba-like topologies, §V-C).
   - train_ticket_dag.pdf      : the train-ticket dependency graph, node size/colour = in-degree
                                 centrality, critical path highlighted, off-path recovered faults
-                                circled (§VI-B).
+                                circled (§V-B).
   - detection_sweep.pdf       : detection rate of both decompositions as the injected fault moves
-                                THROUGH both thresholds (§VI-C honesty check) — shows the headline
+                                THROUGH both thresholds (§V-C honesty check) — shows the headline
                                 gap is a genuine threshold effect, not a constructed point.
   - gamma_sensitivity.pdf     : safely-committable envelope A_commit vs the confidence factor k
-                                (§IV-C), illustrating the competitiveness/protection trade-off.
+                                (§III-B), illustrating the competitiveness/protection trade-off.
 
 Every number is recomputed live from the same code paths as the tables — no value is hardcoded.
 
@@ -239,7 +239,7 @@ def fig_detection_sweep() -> None:
 
 
 def fig_gamma_sensitivity() -> None:
-    """A_commit vs confidence factor k on the running example (§IV-C trade-off)."""
+    """A_commit vs confidence factor k on the running example (§III-B trade-off)."""
     import sys
     sys.path.insert(0, str(REPO / "scripts"))
     from gamma_study import _graph as gamma_graph

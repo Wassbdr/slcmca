@@ -1,4 +1,4 @@
-"""Run the injected-fault dataset through v1 or v2 and count detections (paper §VI, Table I).
+"""Run the injected-fault dataset through v1 or v2 and count detections (paper §V, Table I).
 
 Each scenario is a paper-v2 superset YAML with an ``expected`` block naming the injected
 fault category. A scenario is "detected" when the chosen engine raises at least one fault

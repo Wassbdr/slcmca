@@ -1,4 +1,4 @@
-"""Over-commitment fault detection (paper §IV.B/C) + the top-level evaluate() entry point.
+"""Over-commitment fault detection (paper §III-B/C) + the top-level evaluate() entry point.
 
 Ascending: the target Global-SLO is stricter than the achievable envelope → structurally
 impossible (the paper's headline 99.999% vs 99.7% case).
@@ -171,7 +171,8 @@ def evaluate(path: Sequence[Component], target: SloValues | None = None) -> Verd
         )
     notes.append(
         "Envelope computed over the critical series path; parallel/redundant branches are not "
-        "aggregated (paper limitation §VII), so availability is a conservative lower bound."
+        "aggregated (the prior-practice baseline of paper §V), so availability is a "
+        "conservative lower bound."
     )
 
     thresholds: list[Threshold] = []

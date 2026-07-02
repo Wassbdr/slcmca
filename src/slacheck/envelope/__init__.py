@@ -1,4 +1,4 @@
-"""Pure SLA aggregation math (paper §IV). MUST NOT import from slacheck.datadog."""
+"""Pure SLA aggregation math (paper §III). MUST NOT import from slacheck.datadog."""
 
 from slacheck.envelope.aggregate import compute_envelope
 from slacheck.envelope.decompose import decompose

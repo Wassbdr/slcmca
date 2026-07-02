@@ -1,4 +1,4 @@
-"""Sweep the injected-fault position across the discriminating window (paper §VI-C, honesty check).
+"""Sweep the injected-fault position across the discriminating window (paper §V-C, honesty check).
 
 The headline realistic result (weighted vs uniform decomposition) injects each fault at the MIDDLE
 of the window [weighted_threshold, uniform_threshold]. A fair reviewer will ask whether the

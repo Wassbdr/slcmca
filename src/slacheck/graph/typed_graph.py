@@ -75,11 +75,11 @@ def project_to_dependency_graph(
 
 def infer_edge_types_from_traces(*_args, **_kwargs) -> dict:
     """Future hook: derive disjunctive groups from APM trace spans (retry/failover/replica
-    siblings) once trace ingestion is available. Returns an edge_overrides-shaped dict.
+    siblings). Returns an edge_overrides-shaped dict.
 
-    Not implemented — APM trace ingestion is currently blocked org-side (see
-    docs/datadog_api_catalog.md "Live findings"). Use explicit edge_overrides meanwhile.
+    Not implemented — the service-dependencies endpoint exposes aggregated edges, not the
+    span-level detail this inference needs. Use explicit edge_overrides meanwhile.
     """
     raise NotImplementedError(
-        "trace-based edge-type inference pending APM ingestion; use edge_overrides.yaml"
+        "trace-based edge-type inference not implemented; use edge_overrides.yaml"
     )

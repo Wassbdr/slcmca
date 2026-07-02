@@ -1,6 +1,6 @@
-"""Descending decomposition: a target Global-SLO → per-component thresholds (paper §IV.C).
+"""Descending decomposition: a target Global-SLO → per-component thresholds (paper §III-C).
 
-LIMITATION (paper §VI): this apportions global budgets *uniformly* across the n
+LIMITATION (paper §V, ablated baseline): this apportions global budgets *uniformly* across the n
 components — cost/n, and the global error budget split equally. Real systems are not
 uniform (a DB consumes more budget than a stateless auth service), which is exactly the
 source of the paper's 3 missed Sub-SLO faults. The ascending envelope (aggregate.py) is

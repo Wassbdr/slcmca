@@ -1,4 +1,4 @@
-"""Unconstructed detection rate: faults drawn independently of the method boundary (paper §VI-C).
+"""Unconstructed detection rate: faults drawn independently of the method boundary (paper §V-C).
 
 The headline realistic dataset places each fault inside the window that only weighted decomposition
 covers. To answer "what if the fault is NOT engineered to be weighted-only?", this study draws the

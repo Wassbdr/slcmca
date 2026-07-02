@@ -1,9 +1,9 @@
-# Declared train-ticket topology (the APM stand-in while Datadog trace ingestion is blocked).
+# Declared train-ticket topology (deterministic edges for reproducible evaluation, paper §IV L3).
 #
 # train-ticket's call graph is static and documented; this encodes the principal request
 # flows of the running tt-slacheck instance (entrypoint ts-ui-dashboard). Per-service SLO and
 # k8s metrics are pulled live (--metrics-from live); only the EDGES are declared here.
-# When APM trace ingestion is unblocked, use --source live for automatic edge discovery.
+# Use --source live for fully automatic edge discovery from the APM service map.
 #
 # Edges are caller -> [callees] (caller depends on callee). All conjunctive by default; mark
 # redundant groups disjunctive via edge_overrides.yaml at analyze time.

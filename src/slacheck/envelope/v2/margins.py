@@ -1,4 +1,4 @@
-"""Safety margin γ and the adjusted Sub-SLO ṽᵢ = vᵢ − γᵢ (paper-v2 §IV.C).
+"""Safety margin γ and the adjusted Sub-SLO ṽᵢ = vᵢ − γᵢ (paper §III-B).
 
 γᵢ = max(γ_tier(i), k·σᵢ): the tier classification gives a conservative floor, and the
 empirical stddev σᵢ (×k) tightens it when historical data exists. Applying γ at the

@@ -64,36 +64,36 @@ def main() -> None:
         "Baseline 10/57/0 = 67, Full 10/60/43 = 113. Regenerates tab:eval verbatim.",
     )
 
-    # 3. §VI-B — real systems.
+    # 3. §V-B — real systems.
     _run(
-        "§VI-B case study — train-ticket (38 services)",
+        "§V-B case study — train-ticket (38 services)",
         script("case_study.py"),
         "avail. envelope: baseline 99.40% (3 faults) vs full 98.36% (6); latency false-negative.",
     )
     _run(
-        "§VI-B second system — Online Boutique",
+        "§V-B second system — Online Boutique",
         script("multi_system_study.py"),
         "structural coverage on a second real call graph (tab:realsystems).",
     )
 
-    # 4. §VI-C — statistical validation + the two honesty checks.
+    # 4. §V-C — statistical validation + the two honesty checks.
     _run(
-        "§VI-C headline — realistic population, Wilson CIs",
+        "§V-C headline — realistic population, Wilson CIs",
         script("realistic_study.py"),
         "weighted (full) 89.5% [84.5, 93.0] vs uniform (baseline) 4.0% [2.0, 7.7].",
     )
     _run(
-        "§VI-C honesty — position sweep (defuses the tautology critique)",
+        "§V-C honesty — position sweep (defuses the tautology critique)",
         script("sweep_study.py"),
         "detection tracks the fault crossing both thresholds — a genuine threshold effect.",
     )
     _run(
-        "§VI-C honesty — independent-distribution draw",
+        "§V-C honesty — independent-distribution draw",
         script("indep_study.py"),
         "full still strictly dominates baseline when faults are drawn off both thresholds.",
     )
     _run(
-        "§IV-C — safety-margin sensitivity (gamma sweep)",
+        "§III-B — safety-margin sensitivity (gamma sweep)",
         script("gamma_study.py"),
         "A_commit tightens as the confidence factor k grows (running case).",
     )

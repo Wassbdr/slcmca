@@ -1,4 +1,4 @@
-"""Topology-sensitive aggregation operators (paper-v2 §IV.C).
+"""Topology-sensitive aggregation operators (paper §III-B).
 
 The operator applied to a metric depends on the dependency type τ(e) of the fan-in:
 - cost is τ-independent (everything provisioned incurs charges);

@@ -14,7 +14,9 @@ fixture metrics — see `scripts/case_study.py`.
 **The full live loop has been exercised end-to-end**: live topology discovery (38 ts-* services),
 live per-service trace latencies (11+ services with data), envelope computation over the typed DAG,
 and dashboard publication to Datadog (`slacheck publish --source live`). The published verdict
-dashboard: https://datadoghq.com/dashboard/gef-4qb-szk
+dashboard lives in the org's Datadog account (`app.datadoghq.com/dashboard/gef-4qb-szk`, requires
+org access); its JSON export is in `artifacts/dashboard_train-ticket.json` and can be re-imported
+into any org via Datadog UI → Dashboards → Import.
 
 ## Consistency with the declared topology
 
@@ -36,6 +38,9 @@ kubectl port-forward -n <namespace> svc/ts-ui-dashboard 18080:8080 &
 DD_ENV=<your-env> slacheck record --out fixtures/datadog_live
 ```
 
-`slo_list.json` is now captured (the `slos_read` scope is granted); the pipeline does not require
-it. The k8s resource fixtures (`k8s_*.json`) are large real captures used by the cost and
-readiness-availability models.
+`slo_list.json` is captured (the `slos_read` scope is granted); the pipeline does not require it.
+The org exposed **no SLOs for the train-ticket services** — which is precisely lesson L2 of the
+paper (contractual SLOs are rarely exposed by the backend; infrastructure proxies fill the gap).
+The handful of unrelated org SLOs returned by the API were removed from this capture for privacy,
+leaving the (empty) response shape. The k8s resource fixtures (`k8s_*.json`) are large real
+captures used by the cost and readiness-availability models.

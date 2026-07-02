@@ -1,7 +1,7 @@
-"""The paper's three aggregation operators (§IV.B). Correctness anchor.
+"""The paper's three aggregation operators (§III-B). Correctness anchor.
 
 These encode the publication exactly and are the non-regression contract:
-    agg_availability([99.9, 99.9, 99.9]) == 99.7   (paper §V)
+    agg_availability([99.9, 99.9, 99.9]) == 99.7   (paper §IV)
 
 Do NOT change these without updating tests/test_operators.py.
 All operators assume a *series* path (one value per component on the path).

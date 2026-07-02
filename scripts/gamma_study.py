@@ -1,4 +1,4 @@
-"""Sensitivity of the safely-committable envelope A_commit to the confidence factor k (§IV-C).
+"""Sensitivity of the safely-committable envelope A_commit to the confidence factor k (§III-B).
 
 A_commit aggregates margin-adjusted Sub-SLOs ṽᵢ = vᵢ − γᵢ with γᵢ = max(γ_tier, k·σᵢ). The factor
 k trades competitiveness against protection: a larger k lowers A_commit (more conservative, safer)

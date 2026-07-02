@@ -4,10 +4,10 @@
 > microservices application **from live Datadog topology**, extract a **critical path** under a
 > user constraint, detect **over-commitment faults**, and publish a **Datadog dashboard**.
 
-This implements and extends the ISSRE 2026 paper *"What SLA Can I Commit To? Computing Achievable
-Service-Level Objectives for Multi-Cloud Applications"*. The paper's `slacheck` works on a
-hand-written YAML topology; this tool builds the topology **automatically from Datadog** (validated
-on the `train-ticket` benchmark) and presents the result back inside Datadog.
+This is the artifact for the ISSRE 2026 industry-track paper *"What SLA Can I Commit To? Computing
+Achievable Service-Level Objectives for Multi-Cloud Applications"*. `slacheck` validates an SLA
+either on a hand-written YAML topology or by building the topology **automatically from Datadog**
+(validated end-to-end on the `train-ticket` benchmark), and presents the result back inside Datadog.
 
 ## How it works
 
@@ -17,9 +17,9 @@ Datadog APM ──topology──┐
 Datadog Metrics ─SLOs───┘     (graph/)    (graph/)         (envelope/)            (dashboard/)
 ```
 
-- **Ascending aggregation** (paper §IV.B): combine per-component Sub-SLOs into the guaranteeable
+- **Ascending aggregation** (paper §III-B): combine per-component Sub-SLOs into the guaranteeable
   global envelope — `max` latency, `sum` cost, error-budget composition for availability.
-- **Descending decomposition** (§IV.C): split a target Global-SLO into per-component thresholds.
+- **Descending decomposition** (§III-C): split a target Global-SLO into per-component thresholds.
 - **Critical path**: the DAG is reduced to a single **series path** (max-latency or
   min-availability chain) so the paper's series-only operators apply legitimately.
 

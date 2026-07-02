@@ -1,4 +1,4 @@
-"""Paper-v2 structural-weight decomposition — the headline §IV.D worked numbers."""
+"""Structural-weight decomposition — the headline paper §III-C worked numbers."""
 
 import pytest
 

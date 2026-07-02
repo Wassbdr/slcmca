@@ -1,7 +1,8 @@
 """Reduce the branching DAG to ONE series path that answers a user's SLA constraint.
 
 This is the move that makes the paper's series-only operators legitimately applicable
-to a real topology (paper limitation §VII). We find the heaviest path from the entrypoint:
+to a real topology (the prior-practice baseline of paper §V). We find the heaviest path
+from the entrypoint:
 
 - constraint="latency": node weight = p99 latency. The max-weight path is the bottleneck
   chain that dominates achievable end-to-end latency under MaxType.

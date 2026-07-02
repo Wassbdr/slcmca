@@ -42,7 +42,7 @@ def evaluate_v2(
     components = list(graph.components.values())
 
     notes: list[str] = [
-        "Envelope aggregated over the full typed DAG in topological order (paper-v2 §IV.C); "
+        "Envelope aggregated over the full typed DAG in topological order (paper §III-B); "
         "disjunctive groups compose as redundancy products.",
     ]
     if envelope.cost_eur_h is None:
@@ -55,7 +55,7 @@ def evaluate_v2(
     if target is not None:
         # Ascending fault is judged against the margin-adjusted A_commit, not A*.
         faults += detect_ascending(target, commit)
-        # Descending decomposes the RAW target T, per paper-v2 §IV.D: "the descending
+        # Descending decomposes the RAW target T, per paper §III-C: "the descending
         # validation takes the target Global-SLO T fixed by the architect as input … both
         # operate on the same input data". The two passes are deliberately independent.
         thresholds = decompose_v2(target, graph)

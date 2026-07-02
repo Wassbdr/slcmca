@@ -25,14 +25,15 @@ result as a Datadog dashboard.
 >
 > **Evaluation scripts (each paper number == a script's output):**
 > - `gen_eval.py` / `eval/runner.py` → Table I (constructed dataset, 113/67).
-> - `case_study.py`, `multi_system_study.py` → §VI-B real systems (train-ticket, Online Boutique).
-> - `gen_realistic_eval.py` (modes `window`/`indep`, position param) + `realistic_study.py` → §VI-C
+> - `case_study.py`, `multi_system_study.py` → §V-B real systems (train-ticket, Online Boutique).
+> - `gen_realistic_eval.py` (modes `window`/`indep`, position param) + `realistic_study.py` → §V-C
 >   headline (89.5% vs 4.0%, Fig. detection_realistic).
-> - `sweep_study.py` → §VI-C position sweep (Fig. detection_sweep) — defuses the "tautology" critique.
-> - `indep_study.py` → §VI-C independent-distribution rate (100% vs 89.0%, unconstructed measurement).
-> - `gamma_study.py` → §IV-C safety-margin sensitivity (Fig. gamma_sensitivity, A* = 99.70%).
+> - `sweep_study.py` → §V-C position sweep (Fig. detection_sweep) — defuses the "tautology" critique.
+> - `indep_study.py` → §V-C independent-distribution rate (100% vs 89.0%, unconstructed measurement).
+> - `gamma_study.py` → §III-B safety-margin sensitivity (Fig. gamma_sensitivity, A* = 99.70%).
 >
-> Live Datadog publication is blocked on app-key scopes; the runbook to unblock is `docs/live_unblock.md`.
+> The live Datadog loop has been exercised end-to-end (topology discovery, live latencies, dashboard
+> publication — paper §IV); `docs/live_unblock.md` is the runbook for pointing it at another org.
 
 ---
 
@@ -40,20 +41,20 @@ result as a Datadog dashboard.
 
 | Paper concept | Section | Code |
 |---|---|---|
-| Global-SLA / Sub-SLA, SLOs (response time, availability, cost) | §II.A | `models.py` — `SloValues`, `Component` |
-| Dependency graph (UI → Auth, UI → Stor) | §II.B | `graph/builder.py` (`nx.DiGraph`); sourced from Datadog deps |
-| Series-only assumption | §IV.A, §VII | `graph/critical_path.py` reduces the DAG to one series path |
-| **Ascending** aggregation → guaranteeable envelope | §IV.B | `envelope/aggregate.py` + `envelope/operators.py` |
-| — Response time = MaxType `max(vᵢ)` | §IV.B | `operators.agg_response_time` |
-| — Cost = SumType `Σ vᵢ` | §IV.B | `operators.agg_cost` |
-| — Availability = error-budget `100 − Σ(100 − vᵢ)` | §IV.B | `operators.agg_availability` |
-| **Descending** decomposition → per-component thresholds | §IV.C | `envelope/decompose.py` |
-| — uniform distribution (known limitation, 3 missed faults) | §VI | documented in `decompose.py` docstring |
-| Over-commitment fault (ascending + descending) | §IV.B/C, §I (C1) | `envelope/faults.py` |
-| Tool input (YAML schema) | §V | `fixtures/scenarios/paper_example.yaml` |
-| Tool output (envelope, thresholds, faults) | §V | `models.Verdict`, `cli.py`, `dashboard/builder.py` |
+| Global-SLA / Sub-SLA, SLOs (response time, availability, cost) | §II | `models.py` — `SloValues`, `Component` |
+| Dependency graph (UI → Auth, UI → Stor) | §II | `graph/builder.py` (`nx.DiGraph`); sourced from Datadog deps |
+| Series-only assumption (prior-practice baseline) | §I, §V | `graph/critical_path.py` reduces the DAG to one series path |
+| **Ascending** aggregation → guaranteeable envelope | §III-B | `envelope/aggregate.py` + `envelope/operators.py` |
+| — Response time = MaxType `max(vᵢ)` | §III-B | `operators.agg_response_time` |
+| — Cost = SumType `Σ vᵢ` | §III-B | `operators.agg_cost` |
+| — Availability = error-budget `100 − Σ(100 − vᵢ)` | §III-B | `operators.agg_availability` |
+| **Descending** decomposition → per-component thresholds | §III-C | `envelope/decompose.py` |
+| — uniform distribution (known limitation, 3 missed faults) | §V-A | documented in `decompose.py` docstring |
+| Over-commitment fault (ascending + descending) | §III-B/C, §I (C1) | `envelope/faults.py` |
+| Tool input (YAML schema) | §IV | `fixtures/scenarios/paper_example.yaml` |
+| Tool output (envelope, thresholds, faults) | §IV | `models.Verdict`, `cli.py`, `dashboard/builder.py` |
 
-### v1 worked example (regression contract, §II.B + §V)
+### v1 worked example (regression contract, §II + §IV)
 Three components UI/Auth/Stor, each 99.9% availability → envelope `100 − 3×0.1 = 99.7%`; target
 99.999% → ascending fault; cost 23 ÷ 3 ≈ 7.67 per component. (`tests/test_operators.py`,
 `tests/test_aggregate.py`, `tests/test_faults.py`, `tests/test_decompose.py`.)
@@ -64,16 +65,16 @@ Three components UI/Auth/Stor, each 99.9% availability → envelope `100 − 3×
 
 | v2 (full-method) concept | Section | Code |
 |---|---|---|
-| Typed DAG, τ(e) ∈ {conjunctive, disjunctive} | §IV.B | `models.DependencyGraph` / `DependencyEdge`; `graph/typed_graph.py` |
-| Topological aggregation over the whole DAG | §IV.C | `envelope/v2/aggregate_v2.py` |
-| — conjunctive availability `100 − Σ(100−vᵢ)` (= v1) | §IV.C | `operators_v2.agg_availability_conjunctive` |
-| — **disjunctive availability `100 − Π((100−vᵢ)/100)`** (redundancy improves it) | §IV.C | `operators_v2.agg_availability_disjunctive` |
-| — latency `max` over root-to-leaf paths / `min` branch | §IV.C | `operators_v2.agg_latency_*` |
-| Safety margin γ = max(γ_tier, k·σ); ṽ = v − γ; A_commit | §IV.C | `envelope/v2/margins.py`, `aggregate_v2.compute_commit_envelope_v2` |
-| Structural-weight decomposition wᵢ = (1+deg⁻)/Σ(1+deg⁻) | §IV.D | `envelope/v2/decompose_v2.py` |
-| Reconfiguration sustainability (state machines + KB) | §IV.E | `envelope/v2/reconfig.py`; `models.ReconfigStrategy`/`KnowledgeBase` |
-| Tool input (typed-edge YAML + margins + strategies) | §V | `fixtures/scenarios/paper_example_v2.yaml` |
-| Evaluation Table I (10 / 60 / 43) | §VI | `src/slacheck/eval/runner.py`, `fixtures/eval/`, `slacheck eval` |
+| Typed DAG, τ(e) ∈ {conjunctive, disjunctive} | §III-A | `models.DependencyGraph` / `DependencyEdge`; `graph/typed_graph.py` |
+| Topological aggregation over the whole DAG | §III-B | `envelope/v2/aggregate_v2.py` |
+| — conjunctive availability `100 − Σ(100−vᵢ)` (= v1) | §III-B | `operators_v2.agg_availability_conjunctive` |
+| — **disjunctive availability `100 − Π((100−vᵢ)/100)`** (redundancy improves it) | §III-B | `operators_v2.agg_availability_disjunctive` |
+| — latency `max` over root-to-leaf paths / `min` branch | §III-B | `operators_v2.agg_latency_*` |
+| Safety margin γ = max(γ_tier, k·σ); ṽ = v − γ; A_commit | §III-B | `envelope/v2/margins.py`, `aggregate_v2.compute_commit_envelope_v2` |
+| Structural-weight decomposition wᵢ = (1+deg⁻)/Σ(1+deg⁻) | §III-C | `envelope/v2/decompose_v2.py` |
+| Reconfiguration sustainability (state machines + KB) | §III-D | `envelope/v2/reconfig.py`; `models.ReconfigStrategy`/`KnowledgeBase` |
+| Tool input (typed-edge YAML + margins + strategies) | §IV | `fixtures/scenarios/paper_example_v2.yaml` |
+| Evaluation Table I (10 / 60 / 43) | §V-A | `src/slacheck/eval/runner.py`, `fixtures/eval/`, `slacheck eval` |
 | Version dispatch | — | `envelope/dispatch.py`, `pipeline.analyze(paper_version=…)`, `--paper-version` |
 
 ### v2 worked numbers (proven in tests)

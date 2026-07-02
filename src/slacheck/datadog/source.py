@@ -51,8 +51,8 @@ def get_source(
 
     - ``fixture``: offline, replays fixtures/datadog/*.json (default for dev).
     - ``live``: real Datadog API (needs credentials).
-    - ``declared``: edges from a hand-written ``topology`` YAML (the APM stand-in while
-      trace ingestion is blocked), with metrics delegated to ``metrics_from`` (live/fixture).
+    - ``declared``: edges from a hand-written ``topology`` YAML (deterministic topology for
+      reproducible evaluation), with metrics delegated to ``metrics_from`` (live/fixture).
     """
     if kind == "fixture":
         from slacheck.datadog.fixture_client import FixtureClient

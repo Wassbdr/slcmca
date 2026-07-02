@@ -1,4 +1,4 @@
-"""Descending decomposition (paper §IV.C): cost/n and error-budget split."""
+"""Descending decomposition (paper §III-C): cost/n and error-budget split."""
 
 import pytest
 

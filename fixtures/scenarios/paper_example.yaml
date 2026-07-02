@@ -1,4 +1,4 @@
-# The paper's motivating example (§II.B). 3-component series path UI -> Auth -> Stor,
+# The paper's motivating example (§II). 3-component series path UI -> Auth -> Stor,
 # each 99.9% availability. Used as the regression contract.
 #
 # Paper's Auth Sub-SLA: 14 ms latency, 99.9% availability, 6 EUR/h.

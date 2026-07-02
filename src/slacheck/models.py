@@ -15,14 +15,14 @@ Direction = Literal["ascending", "descending"]
 Constraint = Literal["latency", "availability"]
 
 # --- paper-v2 additions ------------------------------------------------------
-EdgeType = Literal["conjunctive", "disjunctive"]  # τ(e), paper-v2 §IV.B
+EdgeType = Literal["conjunctive", "disjunctive"]  # τ(e), paper §III-A
 PaperVersion = Literal["v1", "v2"]
 CspTier = Literal["tier1", "tier2", "tier3", "tier4"]  # Uptime-Institute-style, ref [4]
 CompareOp = Literal["gt", "lt", "ge", "le"]
 
 
 class SloValues(BaseModel):
-    """One component's measured Sub-SLO, or a target Global-SLO (paper §II.A).
+    """One component's measured Sub-SLO, or a target Global-SLO (paper §II).
 
     ``cost_eur_h`` is ``None`` when no cost source is available — Datadog does not
     expose per-microservice cost (see docs/datadog_api_catalog.md §5).
@@ -41,7 +41,7 @@ class SloValues(BaseModel):
 
 
 class Pricing(BaseModel):
-    """Cloud unit prices for the k8s resource-based cost model (paper §IV.C cost SLO).
+    """Cloud unit prices for the k8s resource-based cost model (paper §III-B cost SLO).
 
     Datadog has no per-microservice cost, so cost is estimated from reserved CPU/memory:
     ``cost_eur_h ≈ cpu_cores·cpu_eur_per_core_h + mem_gb·mem_eur_per_gb_h``. Defaults are
@@ -66,7 +66,7 @@ class ResourceMetrics(BaseModel):
 
 
 class CspProfile(BaseModel):
-    """CSP reliability properties used to derive the paper-v2 safety margin γ (§IV.C).
+    """CSP reliability properties used to derive the safety margin γ (paper §III-B).
 
     ``tier`` selects the conservative tier-floor (in availability points). ``sigma`` is the
     empirical stddev of delivered **availability** (0 → margin falls back to the floor).
@@ -95,7 +95,7 @@ class Component(BaseModel):
 
 
 class Envelope(BaseModel):
-    """The guaranteeable envelope (ascending aggregation result, paper §IV.B).
+    """The guaranteeable envelope (ascending aggregation result, paper §III-B).
 
     Values are achievable *over the series critical path* — not the whole DAG.
     ``cost_eur_h`` is ``None`` when cost data is unavailable.
@@ -108,7 +108,7 @@ class Envelope(BaseModel):
 
 
 class DependencyEdge(BaseModel):
-    """A typed functional dependency u → v (paper-v2 §IV.B)."""
+    """A typed functional dependency u → v (paper §III-A)."""
 
     source: str
     target: str
@@ -209,7 +209,7 @@ class DependencyGraph(BaseModel):
 
 
 class MarginConfig(BaseModel):
-    """Knowledge-base config for the safety margin γ (paper-v2 §IV.C)."""
+    """Knowledge-base config for the safety margin γ (paper §III-B)."""
 
     k: float = 2.0  # confidence factor; k=2 covers ~95% under a normal distribution
     tier_floor: dict[CspTier, float] = Field(default_factory=dict)  # γ_tier lookup
@@ -227,7 +227,7 @@ class ReconfigTransition(BaseModel):
 
     ``action`` is the reconfiguration it applies: ``scale_up`` adds capacity (lowers the
     operational metric, protective), ``scale_down`` removes capacity (raises it, risky near
-    a bound). Used by the sustainability check (paper-v2 §IV.E).
+    a bound). Used by the sustainability check (paper §III-D).
     """
 
     from_state: str
@@ -239,7 +239,7 @@ class ReconfigTransition(BaseModel):
 
 
 class ReconfigStrategy(BaseModel):
-    """Elasticity strategy for a component, modeled as a state machine (paper-v2 §IV.E)."""
+    """Elasticity strategy for a component, modeled as a state machine (paper §III-D)."""
 
     name: str
     component: str
@@ -251,7 +251,7 @@ class ReconfigStrategy(BaseModel):
 class SloTranslationRule(BaseModel):
     """Translates a high-level SLO metric into the operational predicate that sustains it.
 
-    e.g. throughput SLO requires cpu_pct ≤ 80 (paper-v2 §IV.E).
+    e.g. throughput SLO requires cpu_pct ≤ 80 (paper §III-D).
     """
 
     slo_metric: str
@@ -261,14 +261,14 @@ class SloTranslationRule(BaseModel):
 
 
 class KnowledgeBase(BaseModel):
-    """The configurable registry: SLO→operational translation + margin config (paper-v2 §V)."""
+    """The configurable registry: SLO→operational translation + margin config (paper §IV)."""
 
     translation_rules: list[SloTranslationRule] = Field(default_factory=list)
     margin_config: MarginConfig = Field(default_factory=MarginConfig)
 
 
 class Threshold(BaseModel):
-    """Descending per-component requirement (paper §IV.C)."""
+    """Descending per-component requirement (paper §III-C)."""
 
     component: str
     required: SloValues
