@@ -1,0 +1,20 @@
+# Auto-generated evaluation scenario (paper Table I). See scripts/gen_eval.py.
+entrypoint: c0
+components:
+- name: c0
+  slo:
+    availability_pct: 99.9
+- name: c1
+  slo:
+    availability_pct: 99.9
+edges:
+- source: c0
+  target: c1
+  edge_type: conjunctive
+global_target:
+  availability_pct: 99.95
+expected:
+  category: global_slo
+  metric: availability
+  direction: ascending
+  component: null

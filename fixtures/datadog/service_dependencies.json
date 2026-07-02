@@ -1,0 +1,8 @@
+{
+  "ts-gateway-service": { "calls": ["ts-travel-service", "ts-order-service"] },
+  "ts-travel-service": { "calls": ["ts-route-service", "ts-train-service", "ts-order-service"] },
+  "ts-order-service": { "calls": ["ts-station-service"] },
+  "ts-route-service": { "calls": ["ts-station-service"] },
+  "ts-train-service": { "calls": [] },
+  "ts-station-service": { "calls": ["ts-travel-service"] }
+}

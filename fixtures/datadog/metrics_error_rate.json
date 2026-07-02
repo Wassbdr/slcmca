@@ -1,0 +1,11 @@
+{
+  "_comment": "Total error count (trace errors as_count) per service over the window. availability_pct = (1 - errors/requests) * 100, using metrics_request_rate.json as the denominator.",
+  "series": [
+    { "scope": "service:ts-gateway-service", "pointlist": [[1700000060000, 50.0]] },
+    { "scope": "service:ts-travel-service", "pointlist": [[1700000060000, 80.0]] },
+    { "scope": "service:ts-order-service", "pointlist": [[1700000060000, 60.0]] },
+    { "scope": "service:ts-route-service", "pointlist": [[1700000060000, 250.0]] },
+    { "scope": "service:ts-train-service", "pointlist": [[1700000060000, 9.0]] },
+    { "scope": "service:ts-station-service", "pointlist": [[1700000060000, 70.0]] }
+  ]
+}

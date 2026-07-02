@@ -1,0 +1,47 @@
+# Full-method (v2) running case (paper §II + §III). Typed DAG: UI -> Auth, UI -> Stor (both conjunctive),
+# each 99.9% availability. Adds per-component CSP tier/sigma (for the γ margin), a knowledge
+# base, and a reconfiguration strategy. Reproduces the paper's exact worked numbers:
+#   weights wUI=1/5, wAuth=wStor=2/5; cost T=23 -> sUI=4.6, sAuth=sStor=9.2; A* avail = 99.7.
+
+entrypoint: UI
+
+global_target:
+  response_time_ms: 18.0
+  availability_pct: 99.999
+  cost_eur_h: 23.0
+
+components:
+  - name: UI
+    csp: CSP1
+    slo: { response_time_ms: 10.0, availability_pct: 99.9, cost_eur_h: 8.0 }
+    csp_profile: { tier: tier2, sigma: 0.0 }
+  - name: Auth
+    csp: CSP2
+    slo: { response_time_ms: 14.0, availability_pct: 99.9, cost_eur_h: 6.0 }
+    csp_profile: { tier: tier3, sigma: 0.0 }
+  - name: Stor
+    csp: CSP3
+    slo: { response_time_ms: 12.0, availability_pct: 99.9, cost_eur_h: 9.0 }
+    csp_profile: { tier: tier3, sigma: 0.0 }
+
+edges:
+  - { source: UI, target: Auth, edge_type: conjunctive }
+  - { source: UI, target: Stor, edge_type: conjunctive }
+
+knowledge_base:
+  margin_config:
+    k: 2.0
+    tier_floor: { tier1: 0.0, tier2: 0.01, tier3: 0.05, tier4: 0.2 }
+  translation_rules:
+    - { slo_metric: throughput, operational_metric: cpu_pct, operational_op: le, operational_value: 80.0 }
+
+# A faulty strategy: it triggers a scale-DOWN at cpu<85, which can fire while cpu is already
+# above the SLO bound (cpu<=80) — removing capacity then drives cpu further past 80.
+reconfig_strategies:
+  - name: autoscale-stor
+    component: Stor
+    states: [{ name: steady }, { name: scaled }]
+    transitions:
+      - { from_state: scaled, to_state: steady, trigger_metric: cpu_pct, trigger_op: lt, trigger_value: 85.0, action: scale_down }
+
+target_slos: [throughput]

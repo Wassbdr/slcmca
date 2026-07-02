@@ -1,0 +1,9 @@
+{
+  "_comment": "kubernetes_state.deployment.replicas_desired by kube_deployment. ts-station-service has 1 desired but 0 ready -> proxy availability 0%.",
+  "series": [
+    { "scope": "kube_deployment:ts-gateway-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 1.0]] },
+    { "scope": "kube_deployment:ts-travel-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 1.0]] },
+    { "scope": "kube_deployment:ts-route-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 1.0]] },
+    { "scope": "kube_deployment:ts-station-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 1.0]] }
+  ]
+}

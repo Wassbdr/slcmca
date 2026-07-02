@@ -1,0 +1,31 @@
+# Online Boutique (Google "microservices-demo" / hipster shop) — real call graph.
+#
+# SOURCE (authoritative, not inferred): the service-to-service edges are extracted from the
+# *_SERVICE_ADDR environment variables declared in the official Kubernetes manifest:
+#   https://github.com/GoogleCloudPlatform/microservices-demo
+#   release/kubernetes-manifests.yaml
+# Each *_SERVICE_ADDR a Deployment declares is a downstream service it calls. Only edges with an
+# explicit *_SERVICE_ADDR are encoded — none are guessed. Infrastructure targets (redis-cart,
+# shoppingassistantservice) are omitted to keep the graph at the application-microservice level.
+#
+# 10 services, 14 edges. productcatalogservice is the most depended-on (in-degree 3: frontend,
+# checkoutservice, recommendationservice) — a clean fan-in for the structural-weight contribution.
+# All edges conjunctive (no documented redundant providers). Entry point: frontend.
+
+entrypoint: frontend
+
+dependencies:
+  frontend:
+    [productcatalogservice, currencyservice, cartservice, recommendationservice,
+     shippingservice, checkoutservice, adservice]
+  checkoutservice:
+    [productcatalogservice, shippingservice, paymentservice, emailservice,
+     currencyservice, cartservice]
+  recommendationservice: [productcatalogservice]
+  cartservice: []
+  productcatalogservice: []
+  currencyservice: []
+  paymentservice: []
+  shippingservice: []
+  emailservice: []
+  adservice: []

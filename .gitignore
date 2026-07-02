@@ -1,0 +1,52 @@
+# Secrets — NEVER commit
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# LaTeX build artifacts (the single paper source is issre_paper.tex + refs.bib + figures/)
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.fls
+*.fdb_latexmk
+issre_paper.pdf
+
+# Superseded paper artifacts — kept locally as an archive, not tracked (see docs/paper_mapping.md)
+conference_101719.tex
+conference_101719.pdf
+ISSRE_2026__What_SLA_Can_I_Commit_To__v2.pdf
+ISSRE_2026____What_SLA_Can_I_Commit_To__Computing_Achievable_and_Sustainable_Service_Level_Commitments_for_Multi_Cloud_Applications.pdf
+
+# OS / editor
+.DS_Store
+
+# IEEEtran class/bst (third-party, from CTAN — not ours to vendor)
+IEEEtran.cls
+IEEEtran.bst
+
+# regenerable sweep/indep eval artifacts (scripts/sweep_study.py, indep_study.py)
+fixtures/eval_realistic_sweep/
+fixtures/eval_realistic_indep/
+
+# Internal cluster deployment scaffolding — not part of the tool or paper (kept local only)
+deploy/
+
+# Internal working notes — not part of the published repo (kept local only)
+CLAUDE.md

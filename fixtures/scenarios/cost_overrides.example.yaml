@@ -1,0 +1,10 @@
+# Optional per-service cost (EUR/h). Datadog has no per-microservice cost (catalog §5),
+# so cost SLO checks only run when you supply this hand-authored file:
+#   slacheck analyze --source fixture -e ts-gateway-service -c latency \
+#     --cost-overrides fixtures/scenarios/cost_overrides.example.yaml --max-cost-eur-h 20
+ts-gateway-service: 4.0
+ts-travel-service: 8.0
+ts-route-service: 5.0
+ts-station-service: 6.0
+ts-order-service: 7.0
+ts-train-service: 3.0

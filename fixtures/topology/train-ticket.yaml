@@ -1,0 +1,72 @@
+# Declared train-ticket topology (deterministic edges for reproducible evaluation, paper §IV L3).
+#
+# train-ticket's call graph is static and documented; this encodes the principal request
+# flows of the running tt-slacheck instance (entrypoint ts-ui-dashboard). Per-service SLO and
+# k8s metrics are pulled live (--metrics-from live); only the EDGES are declared here.
+# Use --source live for fully automatic edge discovery from the APM service map.
+#
+# Edges are caller -> [callees] (caller depends on callee). All conjunctive by default; mark
+# redundant groups disjunctive via edge_overrides.yaml at analyze time.
+
+entrypoint: ts-ui-dashboard
+
+dependencies:
+  ts-ui-dashboard:
+    [ts-travel-service, ts-order-service, ts-auth-service, ts-user-service, ts-price-service]
+
+  # --- booking / travel query path ---
+  ts-travel-service: [ts-route-service, ts-train-service, ts-ticketinfo-service, ts-seat-service]
+  ts-travel2-service: [ts-route-service, ts-train-service, ts-ticketinfo-service, ts-seat-service]
+  ts-ticketinfo-service: [ts-basic-service]
+  ts-basic-service: [ts-station-service, ts-train-service, ts-route-service, ts-price-service]
+  ts-seat-service: [ts-config-service, ts-order-service, ts-travel-service]
+  ts-route-plan-service: [ts-route-service, ts-travel-service, ts-travel2-service]
+  ts-travel-plan-service:
+    [ts-route-plan-service, ts-travel-service, ts-travel2-service, ts-station-service, ts-seat-service]
+
+  # --- order / payment path ---
+  ts-order-service: [ts-station-service]
+  ts-order-other-service: [ts-station-service]
+  ts-preserve-service:
+    [ts-order-service, ts-seat-service, ts-user-service, ts-assurance-service, ts-station-service,
+     ts-security-service, ts-travel-service, ts-contacts-service, ts-food-service,
+     ts-consign-service, ts-ticketinfo-service]
+  ts-preserve-other-service:
+    [ts-order-other-service, ts-seat-service, ts-station-service, ts-security-service,
+     ts-travel2-service, ts-contacts-service]
+  ts-inside-payment-service: [ts-order-service, ts-payment-service]
+  ts-payment-service: []
+  ts-execute-service: [ts-order-service, ts-order-other-service]
+  ts-cancel-service:
+    [ts-order-service, ts-order-other-service, ts-inside-payment-service, ts-notification-service, ts-user-service]
+  ts-rebook-service:
+    [ts-seat-service, ts-order-service, ts-order-other-service, ts-train-service, ts-route-service,
+     ts-inside-payment-service, ts-travel-service, ts-travel2-service]
+
+  # --- auth / user ---
+  ts-auth-service: [ts-verification-code-service]
+  ts-user-service: [ts-auth-service]
+
+  # --- ancillary services ---
+  ts-consign-service: [ts-consign-price-service]
+  ts-food-service: [ts-food-map-service, ts-station-service, ts-travel-service]
+  ts-contacts-service: []
+  ts-assurance-service: []
+  ts-security-service: [ts-order-service, ts-order-other-service]
+  ts-route-service: []
+  ts-train-service: []
+  ts-station-service: []
+  ts-price-service: []
+  ts-config-service: []
+  ts-verification-code-service: []
+  ts-consign-price-service: []
+  ts-food-map-service: []
+  ts-notification-service: []
+
+  # --- admin plane ---
+  ts-admin-order-service: [ts-order-service, ts-order-other-service]
+  ts-admin-travel-service: [ts-travel-service, ts-travel2-service, ts-route-service]
+  ts-admin-route-service: [ts-route-service]
+  ts-admin-user-service: [ts-user-service]
+  ts-admin-basic-info-service:
+    [ts-station-service, ts-train-service, ts-config-service, ts-price-service, ts-contacts-service]

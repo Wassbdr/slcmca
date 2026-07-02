@@ -1,0 +1,149 @@
+"""Build a Datadog dashboard JSON (plain dict) from an AnalysisResult. No network here.
+
+Widgets:
+  - note: the envelope verdict (green if feasible, red otherwise)
+  - group "Critical Path": one timeseries per path service (p99 latency + error rate)
+  - group "Over-Commitment Faults": one note per fault
+  - group "Topology": the extracted path + any dropped cycle edges + caveats
+"""
+
+from __future__ import annotations
+
+from slacheck.models import Verdict
+from slacheck.pipeline import AnalysisResult
+
+# trace metric templates — keep in sync with datadog/live_client.py _QUERIES and the catalog §2.
+# The Java/Spring train-ticket app exposes the servlet stat ``trace.servlet.request`` (its
+# duration is the base metric, not a ``.duration`` suffix).
+_LATENCY_Q = "p99:trace.servlet.request{{service:{svc}}}"
+_ERRORS_Q = "sum:trace.servlet.request.errors{{service:{svc}}}.as_count()"
+# k8s resource templates — available without APM (catalog §4), keyed by kube_deployment
+_CPU_Q = "avg:kubernetes.cpu.usage.total{{kube_deployment:{svc}}}"
+_MEM_Q = "avg:kubernetes.memory.usage{{kube_deployment:{svc}}}"
+
+
+def _fmt_env(env) -> str:
+    lat = f"{env.response_time_ms:g} ms" if env.response_time_ms is not None else "n/a"
+    av = f"{env.availability_pct:g}%" if env.availability_pct is not None else "n/a"
+    cost = f"{env.cost_eur_h:g} EUR/h" if env.cost_eur_h is not None else "n/a (Datadog gap)"
+    return f"- latency ≤ **{lat}**\n- availability ≤ **{av}**\n- cost ≤ **{cost}**"
+
+
+def _verdict_markdown(result: AnalysisResult) -> str:
+    v = result.verdict
+    env = v.envelope
+    status = "✅ FEASIBLE" if v.feasible else "❌ OVER-COMMITTED"
+    label = "topological order" if result.paper_version == "v2" else "critical path"
+    md = (
+        f"## SLA envelope — {status}  ({result.paper_version})\n\n"
+        f"**Constraint:** {result.constraint} from `{result.entrypoint}`\n\n"
+        f"Achievable envelope A*:\n{_fmt_env(env)}\n\n"
+    )
+    if v.commit_envelope is not None:
+        md += f"Safely committable A_commit (after γ margins):\n{_fmt_env(v.commit_envelope)}\n\n"
+    md += f"{label.capitalize()}: {' → '.join(env.path)}"
+    return md
+
+
+def _note(content: str, color: str = "white", size: str = "m") -> dict:
+    return {
+        "definition": {
+            "type": "note",
+            "content": content,
+            "background_color": color,
+            "font_size": "14",
+            "text_align": "left",
+            "vertical_align": "top",
+            "show_tick": False,
+            "has_padding": True,
+        }
+    }
+
+
+def _timeseries(svc: str) -> dict:
+    return {
+        "definition": {
+            "type": "timeseries",
+            "title": svc,
+            "requests": [
+                {"q": _LATENCY_Q.format(svc=svc), "display_type": "line"},
+                {"q": _ERRORS_Q.format(svc=svc), "display_type": "bars"},
+            ],
+        }
+    }
+
+
+def _resource_timeseries(svc: str) -> dict:
+    return {
+        "definition": {
+            "type": "timeseries",
+            "title": f"{svc} — resources",
+            "requests": [
+                {"q": _CPU_Q.format(svc=svc), "display_type": "line"},
+                {"q": _MEM_Q.format(svc=svc), "display_type": "line"},
+            ],
+        }
+    }
+
+
+def _group(title: str, widgets: list[dict], color: str = "vivid_blue") -> dict:
+    return {
+        "definition": {
+            "type": "group",
+            "title": title,
+            "layout_type": "ordered",
+            "background_color": color,
+            "widgets": widgets,
+        }
+    }
+
+
+def _fault_notes(verdict: Verdict) -> list[dict]:
+    if not verdict.faults:
+        return [_note("No over-commitment faults detected. 🎉", color="green")]
+    notes = []
+    for f in verdict.faults:
+        scope = f.component or "global"
+        notes.append(
+            _note(
+                f"**[{f.direction} / {f.metric}]** {scope}\n\n{f.message}",
+                color="red",
+            )
+        )
+    return notes
+
+
+def build_dashboard(result: AnalysisResult, title: str | None = None) -> dict:
+    """Return a Datadog dashboard payload (POST /api/v1/dashboard body)."""
+    verdict = result.verdict
+    title = title or f"slacheck — {result.entrypoint} ({result.constraint})"
+    verdict_color = "green" if verdict.feasible else "red"
+
+    topology_lines = [f"**Critical path:** {' → '.join(verdict.envelope.path)}"]
+    if result.dropped_edges:
+        topology_lines.append(
+            "**Dropped cycle edges:** "
+            + ", ".join(f"{u}→{v}" for u, v in result.dropped_edges)
+        )
+    topology_lines += [f"_{n}_" for n in verdict.notes]
+
+    path = verdict.envelope.path
+    widgets = [
+        _note(_verdict_markdown(result), color=verdict_color, size="l"),
+        _group("Critical Path", [_timeseries(svc) for svc in path]),
+        _group("Resource Health (k8s)", [_resource_timeseries(svc) for svc in path]),
+        _group("Over-Commitment Faults", _fault_notes(verdict)),
+        _group("Topology & Caveats", [_note("\n\n".join(topology_lines))]),
+    ]
+
+    return {
+        "title": title,
+        "description": (
+            "Generated by slacheck — achievable SLA envelope from Datadog topology. "
+            f"Entrypoint: {result.entrypoint}."
+        ),
+        "layout_type": "ordered",
+        # Some orgs restrict dashboard tag keys (e.g. to team/ai); use a key:value form.
+        "tags": ["team:slacheck"],
+        "widgets": widgets,
+    }

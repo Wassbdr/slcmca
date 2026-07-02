@@ -1,0 +1,935 @@
+{
+  "agent": {
+    "calls": [
+      "ts-travel2-service",
+      "ts-contacts-service-with-jaeger",
+      "catalogue",
+      "ts-rebook-service-with-jaeger",
+      "ts-preserve-service-with-jaeger",
+      "ts-preserve-other-service",
+      "ts-seat-service-with-jaeger",
+      "ts-cancel-service",
+      "ts-travel2-service-with-jaeger",
+      "ts-train-service-with-jaeger",
+      "nginx-gateway-fabric",
+      "ts-auth-service-with-jaeger",
+      "ts-admin-basic-info-service",
+      "ts-ticketinfo-service-with-jaeger",
+      "source-controller",
+      "ts-preserve-other-service-with-jaeger",
+      "mongodb_exporter",
+      "ts-seat-service",
+      "ts-order-service",
+      "ts-inside-payment-service",
+      "kube-state-metrics",
+      "ts-price-service-with-jaeger",
+      "ts-notification-service-with-jaeger",
+      "ts-station-service",
+      "ts-execute-service-with-jaeger",
+      "ts-station-service-with-jaeger",
+      "ts-verification-code-service",
+      "ts-route-service-with-jaeger",
+      "ts-food-service",
+      "ts-consign-service",
+      "ts-train-service",
+      "orders",
+      "payment",
+      "ts-travel-service",
+      "ts-route-service",
+      "kustomize-controller",
+      "ts-food-service-with-jaeger",
+      "ts-order-other-service",
+      "ts-basic-service",
+      "rabbitmq",
+      "ts-verification-code-service-with-jaeger",
+      "opentelemetry-collector-contrib",
+      "mirrored-prometheus-node-exporter",
+      "ts-order-other-service-with-jaeger",
+      "ts-price-service",
+      "carts",
+      "cert-manager-webhook",
+      "ts-payment-service-with-jaeger",
+      "ts-user-service-with-jaeger",
+      "ts-travel-plan-service",
+      "install-cni",
+      "ts-contacts-service",
+      "ts-assurance-service-with-jaeger",
+      "ts-admin-basic-info-service-with-jaeger",
+      "ts-admin-order-service-with-jaeger",
+      "ts-food-map-service",
+      "user",
+      "json-exporter",
+      "rabbitmq-exporter",
+      "front-end",
+      "ts-consign-price-service-with-jaeger",
+      "speaker",
+      "chaos-coredns",
+      "ts-admin-order-service",
+      "node-exporter",
+      "helm-controller",
+      "pilot",
+      "ts-preserve-service",
+      "cluster-agent",
+      "mongodb-exporter",
+      "ts-rebook-service",
+      "image-automation-controller",
+      "ts-admin-route-service-with-jaeger",
+      "ts-config-service",
+      "ts-travel-service-with-jaeger",
+      "controller",
+      "ts-execute-service",
+      "ts-consign-price-service",
+      "mirrored-cilium-operator-generic",
+      "ts-admin-route-service",
+      "ts-notification-service",
+      "easytravel-backend",
+      "appco-node-exporter",
+      "ts-cancel-service-with-jaeger",
+      "ts-admin-user-service-with-jaeger",
+      "ts-ticketinfo-service",
+      "ts-user-service",
+      "cert-manager-controller",
+      "cert-manager-cainjector",
+      "ts-food-map-service-with-jaeger",
+      "ts-admin-travel-service-with-jaeger",
+      "ts-security-service",
+      "ts-route-plan-service",
+      "ts-inside-payment-service-with-jaeger",
+      "image-reflector-controller",
+      "ts-config-service-with-jaeger",
+      "nginx-prometheus-exporter",
+      "ts-admin-user-service",
+      "ts-auth-service",
+      "ts-assurance-service",
+      "ts-payment-service",
+      "ts-travel-plan-service-with-jaeger",
+      "ts-security-service-with-jaeger",
+      "proxyv2",
+      "queue-master",
+      "all-in-one",
+      "notification-controller",
+      "chaos-mesh",
+      "operator",
+      "shipping",
+      "ts-route-plan-service-with-jaeger",
+      "ts-admin-travel-service",
+      "ts-consign-service-with-jaeger",
+      "ts-basic-service-with-jaeger"
+    ]
+  },
+  "alertmanager": {
+    "calls": []
+  },
+  "all-in-one": {
+    "calls": []
+  },
+  "appco-alertmanager": {
+    "calls": []
+  },
+  "appco-grafana": {
+    "calls": []
+  },
+  "appco-k8s-sidecar": {
+    "calls": []
+  },
+  "appco-kube-state-metrics": {
+    "calls": []
+  },
+  "appco-node-exporter": {
+    "calls": []
+  },
+  "awx": {
+    "calls": [
+      "hardened-kubernetes"
+    ]
+  },
+  "awx-operator": {
+    "calls": []
+  },
+  "backing-image-manager": {
+    "calls": []
+  },
+  "blackbox-exporter": {
+    "calls": []
+  },
+  "carts": {
+    "calls": []
+  },
+  "catalogue": {
+    "calls": []
+  },
+  "cdi-controller": {
+    "calls": []
+  },
+  "cdi-operator": {
+    "calls": []
+  },
+  "cert-manager-cainjector": {
+    "calls": []
+  },
+  "cert-manager-controller": {
+    "calls": []
+  },
+  "cert-manager-webhook": {
+    "calls": []
+  },
+  "chaos-coredns": {
+    "calls": []
+  },
+  "chaos-daemon": {
+    "calls": []
+  },
+  "chaos-mesh": {
+    "calls": []
+  },
+  "cluster-agent": {
+    "calls": []
+  },
+  "coder": {
+    "calls": []
+  },
+  "controller": {
+    "calls": []
+  },
+  "cost-model": {
+    "calls": []
+  },
+  "csi-node-driver-registrar": {
+    "calls": []
+  },
+  "curl": {
+    "calls": [
+      "easytravel-frontend",
+      "easytravel-backend"
+    ]
+  },
+  "dcgm-exporter": {
+    "calls": []
+  },
+  "demo": {
+    "calls": [
+      "opentelemetry-collector-contrib",
+      "flagd"
+    ]
+  },
+  "dex": {
+    "calls": []
+  },
+  "dqn-scheduler": {
+    "calls": []
+  },
+  "easytravel-backend": {
+    "calls": []
+  },
+  "easytravel-frontend": {
+    "calls": [
+      "easytravel-backend"
+    ]
+  },
+  "easytravel-headless-loadgen": {
+    "calls": [
+      "easytravel-nginx"
+    ]
+  },
+  "easytravel-nginx": {
+    "calls": []
+  },
+  "fabric-ca": {
+    "calls": []
+  },
+  "fabric-orderer": {
+    "calls": []
+  },
+  "fabric-peer": {
+    "calls": []
+  },
+  "flagd": {
+    "calls": []
+  },
+  "front-end": {
+    "calls": []
+  },
+  "gatekeeper": {
+    "calls": []
+  },
+  "gpu-operator": {
+    "calls": []
+  },
+  "grafana": {
+    "calls": []
+  },
+  "haproxy-ingress": {
+    "calls": []
+  },
+  "hardened-calico": {
+    "calls": []
+  },
+  "hardened-cluster-autoscaler": {
+    "calls": []
+  },
+  "hardened-coredns": {
+    "calls": []
+  },
+  "hardened-etcd": {
+    "calls": []
+  },
+  "hardened-kubernetes": {
+    "calls": []
+  },
+  "harvester-cluster-repo": {
+    "calls": []
+  },
+  "harvester-network-webhook": {
+    "calls": []
+  },
+  "helm-controller": {
+    "calls": []
+  },
+  "image-automation-controller": {
+    "calls": []
+  },
+  "image-reflector-controller": {
+    "calls": []
+  },
+  "install-cni": {
+    "calls": []
+  },
+  "jaeger": {
+    "calls": []
+  },
+  "json-exporter": {
+    "calls": [
+      "easytravel-backend"
+    ]
+  },
+  "k8s": {
+    "calls": []
+  },
+  "k8s-sidecar": {
+    "calls": []
+  },
+  "katib-controller": {
+    "calls": []
+  },
+  "keda": {
+    "calls": []
+  },
+  "keda-admission-webhooks": {
+    "calls": []
+  },
+  "kfp-persistence-agent": {
+    "calls": [
+      "proxyv2"
+    ]
+  },
+  "kserve-controller": {
+    "calls": []
+  },
+  "kube-state-metrics": {
+    "calls": []
+  },
+  "kustomize-controller": {
+    "calls": []
+  },
+  "livenessprobe": {
+    "calls": []
+  },
+  "loki": {
+    "calls": []
+  },
+  "loki-canary": {
+    "calls": [
+      "nginx-unprivileged"
+    ]
+  },
+  "longhorn-manager": {
+    "calls": [
+      "backing-image-manager"
+    ]
+  },
+  "memcached-exporter": {
+    "calls": []
+  },
+  "metacontroller": {
+    "calls": []
+  },
+  "mirrored-calico-node": {
+    "calls": []
+  },
+  "mirrored-calico-typha": {
+    "calls": []
+  },
+  "mirrored-cilium-cilium": {
+    "calls": []
+  },
+  "mirrored-cilium-operator-generic": {
+    "calls": []
+  },
+  "mirrored-cluster-api-controller": {
+    "calls": []
+  },
+  "mirrored-fluent-fluent-bit": {
+    "calls": []
+  },
+  "mirrored-grafana-grafana": {
+    "calls": []
+  },
+  "mirrored-kiwigrid-k8s-sidecar": {
+    "calls": [
+      "hardened-kubernetes"
+    ]
+  },
+  "mirrored-kube-logging-fluentd": {
+    "calls": [
+      "loki"
+    ]
+  },
+  "mirrored-kube-state-metrics-kube-state-metrics": {
+    "calls": []
+  },
+  "mirrored-library-nginx": {
+    "calls": []
+  },
+  "mirrored-prometheus-adapter-prometheus-adapter": {
+    "calls": [
+      "mirrored-library-nginx"
+    ]
+  },
+  "mirrored-prometheus-alertmanager": {
+    "calls": []
+  },
+  "mirrored-prometheus-node-exporter": {
+    "calls": []
+  },
+  "mirrored-prometheus-operator-prometheus-operator": {
+    "calls": []
+  },
+  "mirrored-sig-storage-snapshot-controller": {
+    "calls": []
+  },
+  "mongo": {
+    "calls": []
+  },
+  "mongodb-exporter": {
+    "calls": []
+  },
+  "mongodb_exporter": {
+    "calls": []
+  },
+  "nginx": {
+    "calls": []
+  },
+  "nginx-gateway-fabric": {
+    "calls": []
+  },
+  "nginx-ingress-controller": {
+    "calls": [
+      "nginx",
+      "rancher"
+    ]
+  },
+  "nginx-prometheus-exporter": {
+    "calls": [
+      "nginx"
+    ]
+  },
+  "nginx-unprivileged": {
+    "calls": [
+      "loki"
+    ]
+  },
+  "node-exporter": {
+    "calls": []
+  },
+  "node-feature-discovery": {
+    "calls": []
+  },
+  "notification-controller": {
+    "calls": []
+  },
+  "oauth2-proxy": {
+    "calls": []
+  },
+  "opentelemetry-collector": {
+    "calls": []
+  },
+  "opentelemetry-collector-contrib": {
+    "calls": []
+  },
+  "operator": {
+    "calls": []
+  },
+  "orders": {
+    "calls": []
+  },
+  "payment": {
+    "calls": []
+  },
+  "phpmyadmin": {
+    "calls": []
+  },
+  "pilot": {
+    "calls": []
+  },
+  "poddefaults-webhook": {
+    "calls": []
+  },
+  "prom-prometheus": {
+    "calls": [
+      "mirrored-kube-state-metrics-kube-state-metrics",
+      "virt-operator",
+      "cdi-controller",
+      "longhorn-manager",
+      "mirrored-library-nginx",
+      "mirrored-prometheus-node-exporter",
+      "appco-kube-state-metrics",
+      "cdi-operator",
+      "mirrored-prometheus-operator-prometheus-operator",
+      "mirrored-prometheus-alertmanager",
+      "nginx-ingress-controller",
+      "appco-alertmanager",
+      "virt-controller",
+      "virt-handler",
+      "appco-node-exporter",
+      "hardened-coredns",
+      "virt-api"
+    ]
+  },
+  "prometheus": {
+    "calls": [
+      "ts-admin-route-service",
+      "pushgateway",
+      "ts-travel-service",
+      "ts-admin-user-service-with-jaeger",
+      "chaos-coredns",
+      "payment",
+      "ts-food-service",
+      "json-exporter",
+      "ts-assurance-service",
+      "ts-rebook-service",
+      "ts-user-service-with-jaeger",
+      "ts-station-service",
+      "ts-basic-service",
+      "ts-payment-service-with-jaeger",
+      "ts-verification-code-service",
+      "node-exporter",
+      "ts-consign-price-service-with-jaeger",
+      "blackbox-exporter",
+      "ts-preserve-other-service",
+      "ts-notification-service",
+      "ts-consign-service-with-jaeger",
+      "ts-preserve-service-with-jaeger",
+      "ts-admin-order-service",
+      "ts-admin-basic-info-service-with-jaeger",
+      "front-end",
+      "ts-inside-payment-service-with-jaeger",
+      "ts-notification-service-with-jaeger",
+      "all-in-one",
+      "ts-travel2-service",
+      "ts-food-map-service",
+      "loki",
+      "ts-order-other-service-with-jaeger",
+      "ts-admin-order-service-with-jaeger",
+      "ts-seat-service",
+      "ts-consign-price-service",
+      "ts-config-service-with-jaeger",
+      "ts-user-service",
+      "ts-route-plan-service",
+      "chaos-daemon",
+      "user",
+      "mongodb_exporter",
+      "ts-train-service",
+      "prometheus-config-reloader",
+      "ts-price-service",
+      "ts-price-service-with-jaeger",
+      "ts-config-service",
+      "opentelemetry-collector-contrib",
+      "alertmanager",
+      "ts-order-service",
+      "ts-verification-code-service-with-jaeger",
+      "ts-cancel-service",
+      "ts-order-other-service",
+      "prometheus-operator",
+      "hardened-coredns",
+      "nginx-prometheus-exporter",
+      "ts-basic-service-with-jaeger",
+      "dqn-scheduler",
+      "orders",
+      "ts-auth-service",
+      "ts-route-plan-service-with-jaeger",
+      "chaos-mesh",
+      "ts-train-service-with-jaeger",
+      "ts-admin-route-service-with-jaeger",
+      "ts-travel-service-with-jaeger",
+      "ts-food-service-with-jaeger",
+      "ts-ticketinfo-service",
+      "ts-auth-service-with-jaeger",
+      "ts-execute-service-with-jaeger",
+      "ts-contacts-service-with-jaeger",
+      "ts-route-service",
+      "ts-ticketinfo-service-with-jaeger",
+      "catalogue",
+      "ts-admin-travel-service-with-jaeger",
+      "ts-admin-basic-info-service",
+      "carts",
+      "ts-route-service-with-jaeger",
+      "queue-master",
+      "ts-cancel-service-with-jaeger",
+      "shipping",
+      "ts-security-service",
+      "ts-assurance-service-with-jaeger",
+      "ts-preserve-other-service-with-jaeger",
+      "ts-rebook-service-with-jaeger",
+      "ts-inside-payment-service",
+      "ts-travel-plan-service",
+      "ts-food-map-service-with-jaeger",
+      "ts-preserve-service",
+      "ts-payment-service",
+      "ts-travel-plan-service-with-jaeger",
+      "ts-consign-service",
+      "kube-state-metrics",
+      "ts-admin-user-service",
+      "ts-travel2-service-with-jaeger",
+      "ts-station-service-with-jaeger",
+      "ts-contacts-service",
+      "ts-security-service-with-jaeger",
+      "ts-execute-service",
+      "grafana",
+      "ts-admin-travel-service",
+      "ts-seat-service-with-jaeger"
+    ]
+  },
+  "prometheus-config-reloader": {
+    "calls": []
+  },
+  "prometheus-ncpas-pipeline": {
+    "calls": []
+  },
+  "prometheus-operator": {
+    "calls": []
+  },
+  "promtail": {
+    "calls": [
+      "loki"
+    ]
+  },
+  "proxyv2": {
+    "calls": [
+      "webhook",
+      "fabric-orderer"
+    ]
+  },
+  "pushgateway": {
+    "calls": []
+  },
+  "pushprox": {
+    "calls": [
+      "hardened-kubernetes"
+    ]
+  },
+  "python": {
+    "calls": []
+  },
+  "pytorch": {
+    "calls": [
+      "prometheus"
+    ]
+  },
+  "queue-master": {
+    "calls": []
+  },
+  "rabbitmq": {
+    "calls": []
+  },
+  "rabbitmq-exporter": {
+    "calls": []
+  },
+  "rancher": {
+    "calls": [
+      "harvester-cluster-repo"
+    ]
+  },
+  "registry": {
+    "calls": []
+  },
+  "rollout-operator": {
+    "calls": []
+  },
+  "shipping": {
+    "calls": []
+  },
+  "source-controller": {
+    "calls": []
+  },
+  "speaker": {
+    "calls": []
+  },
+  "stackstate-k8s-agent": {
+    "calls": [
+      "stackstate-k8s-cluster-agent"
+    ]
+  },
+  "stackstate-k8s-cluster-agent": {
+    "calls": []
+  },
+  "ts-admin-basic-info-service": {
+    "calls": []
+  },
+  "ts-admin-basic-info-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-admin-order-service": {
+    "calls": []
+  },
+  "ts-admin-order-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-admin-route-service": {
+    "calls": []
+  },
+  "ts-admin-route-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-admin-travel-service": {
+    "calls": []
+  },
+  "ts-admin-travel-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-admin-user-service": {
+    "calls": []
+  },
+  "ts-admin-user-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-assurance-service": {
+    "calls": []
+  },
+  "ts-assurance-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-auth-service": {
+    "calls": [
+      "mongo"
+    ]
+  },
+  "ts-auth-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-basic-service": {
+    "calls": []
+  },
+  "ts-basic-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-cancel-service": {
+    "calls": []
+  },
+  "ts-cancel-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-config-service": {
+    "calls": []
+  },
+  "ts-config-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-consign-price-service": {
+    "calls": []
+  },
+  "ts-consign-price-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-consign-service": {
+    "calls": []
+  },
+  "ts-consign-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-contacts-service": {
+    "calls": []
+  },
+  "ts-contacts-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-execute-service": {
+    "calls": []
+  },
+  "ts-execute-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-food-map-service": {
+    "calls": []
+  },
+  "ts-food-map-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-food-service": {
+    "calls": []
+  },
+  "ts-food-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-inside-payment-service": {
+    "calls": []
+  },
+  "ts-inside-payment-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-notification-service": {
+    "calls": []
+  },
+  "ts-notification-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-order-other-service": {
+    "calls": []
+  },
+  "ts-order-other-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-order-service": {
+    "calls": []
+  },
+  "ts-order-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-payment-service": {
+    "calls": []
+  },
+  "ts-payment-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-preserve-other-service": {
+    "calls": []
+  },
+  "ts-preserve-other-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-preserve-service": {
+    "calls": []
+  },
+  "ts-preserve-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-price-service": {
+    "calls": []
+  },
+  "ts-price-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-rebook-service": {
+    "calls": []
+  },
+  "ts-rebook-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-route-plan-service": {
+    "calls": []
+  },
+  "ts-route-plan-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-route-service": {
+    "calls": []
+  },
+  "ts-route-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-seat-service": {
+    "calls": []
+  },
+  "ts-seat-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-security-service": {
+    "calls": []
+  },
+  "ts-security-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-station-service": {
+    "calls": [
+      "mongo"
+    ]
+  },
+  "ts-station-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-ticketinfo-service": {
+    "calls": []
+  },
+  "ts-ticketinfo-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-train-service": {
+    "calls": []
+  },
+  "ts-train-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-travel-plan-service": {
+    "calls": []
+  },
+  "ts-travel-plan-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-travel-service": {
+    "calls": []
+  },
+  "ts-travel-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-travel2-service": {
+    "calls": []
+  },
+  "ts-travel2-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-ui-dashboard": {
+    "calls": [
+      "ts-train-service",
+      "ts-auth-service",
+      "ts-station-service"
+    ]
+  },
+  "ts-user-service": {
+    "calls": []
+  },
+  "ts-user-service-with-jaeger": {
+    "calls": []
+  },
+  "ts-verification-code-service": {
+    "calls": []
+  },
+  "ts-verification-code-service-with-jaeger": {
+    "calls": []
+  },
+  "user": {
+    "calls": []
+  },
+  "victoria-metrics": {
+    "calls": []
+  },
+  "virt-api": {
+    "calls": []
+  },
+  "virt-controller": {
+    "calls": []
+  },
+  "virt-handler": {
+    "calls": []
+  },
+  "virt-operator": {
+    "calls": []
+  },
+  "vminsert": {
+    "calls": []
+  },
+  "vmselect": {
+    "calls": []
+  },
+  "webhook": {
+    "calls": []
+  }
+}

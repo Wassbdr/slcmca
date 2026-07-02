@@ -1,0 +1,50 @@
+# Auto-generated realistic scenario. See scripts/gen_realistic_eval.py.
+entrypoint: s0
+components:
+- name: s0
+  slo:
+    cost_eur_h: 1.0
+- name: s1
+  slo:
+    cost_eur_h: 1.0
+- name: s2
+  slo:
+    cost_eur_h: 1.0
+- name: s3
+  slo:
+    cost_eur_h: 1.0
+- name: s4
+  slo:
+    cost_eur_h: 1.0
+- name: s5
+  slo:
+    cost_eur_h: 3.365
+edges:
+- source: s0
+  target: s1
+  edge_type: conjunctive
+- source: s0
+  target: s2
+  edge_type: conjunctive
+- source: s1
+  target: s2
+  edge_type: conjunctive
+- source: s0
+  target: s3
+  edge_type: conjunctive
+- source: s2
+  target: s4
+  edge_type: conjunctive
+- source: s0
+  target: s4
+  edge_type: conjunctive
+- source: s1
+  target: s5
+  edge_type: conjunctive
+global_target:
+  cost_eur_h: 21.0
+expected:
+  category: sub_slo
+  metric: cost
+  direction: descending
+  component: s5

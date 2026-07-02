@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "slacheck"
+version = "0.1.0"
+description = "Compute the achievable SLA envelope of a multi-cloud app from live Datadog topology, extract a critical path under a user constraint, detect over-commitment, and publish a Datadog dashboard."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Wassim Badraoui", email = "wassim.badraoui07@gmail.com" }]
+dependencies = [
+    "networkx>=3.0",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "typer>=0.12",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# Live Datadog integration (Phase 3+). The offline pipeline does NOT need these.
+datadog = ["datadog-api-client>=2.20"]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "types-PyYAML",
+]
+
+[project.scripts]
+slacheck = "slacheck.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "live: tests that hit the real Datadog API (require DD_API_KEY/DD_APP_KEY); skipped by default",
+]
+addopts = "-m 'not live'"
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# typer's API intentionally calls Option()/Argument() in parameter defaults.
+"src/slacheck/cli.py" = ["B008"]
+# the eval generator inserts src/ on sys.path before importing slacheck (E402 intentional).
+"scripts/gen_eval.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.10"
+packages = ["slacheck"]
+mypy_path = "src"
+ignore_missing_imports = true
+warn_unused_ignores = true

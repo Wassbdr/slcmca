@@ -1,0 +1,43 @@
+# Real-world case study scenario: train-ticket (38 services).
+#
+# This is a META-scenario: it pins the architect inputs for the paper's "Real-World Case Study"
+# (Section VI). It does NOT re-declare the 38-service call graph — that lives in
+# fixtures/topology/train-ticket.yaml (the documented static topology, also obtainable live from
+# Datadog APM). The executable source of truth for the numbers is scripts/case_study.py, which
+# runs this exact configuration through the pipeline for both v1 and v2.
+#
+# Metrics come from fixtures/datadog/ (APM-shaped) for full offline reproducibility. The live
+# snapshot at fixtures/datadog_live/ is the provenance artifact proving the topology came from
+# Datadog — it is NOT used for the reproducible numbers (live traffic is sparse/volatile).
+#
+# Reproduce:
+#   python scripts/case_study.py
+#   slacheck analyze --source declared --topology fixtures/topology/train-ticket.yaml \
+#     --metrics-from fixture --paper-version v2 -e ts-ui-dashboard -c availability \
+#     --min-availability-pct 99.9 --pricing fixtures/scenarios/pricing.example.yaml
+
+topology: fixtures/topology/train-ticket.yaml
+entrypoint: ts-ui-dashboard
+metrics_from: fixture
+pricing: fixtures/scenarios/pricing.example.yaml
+
+# Architect Global-SLOs. Two demanding-but-realistic targets, each chosen to expose the
+# topology-coverage gap between the critical-path baseline (v1) and full-DAG aggregation (v2):
+#   - availability >= 99.9%: v1 flags 3 faults (envelope 99.40%), v2 flags 6 (envelope 98.36%),
+#     recovering ts-order/ts-station/ts-train — high-centrality hubs off v1's single critical path.
+#   - latency <= 30 ms: v1 reports FEASIBLE (24 ms on its path) while v2 raises an ascending fault
+#     (48 ms end-to-end over the whole DAG) — a real false-negative the typed-DAG model prevents.
+global_target:
+  availability_pct: 99.9
+  response_time_ms: 30.0
+
+# Safety margins: same tier model as the paper running case (γ = max(γ_tier, k·σ), k=2).
+knowledge_base:
+  margin_config:
+    k: 2.0
+    tier_floor: { tier1: 0.0, tier2: 0.01, tier3: 0.05, tier4: 0.2 }
+
+# NOTE on disjunctive redundancy: train-ticket has no documented replicated providers, so the
+# headline case is all-conjunctive (the conservative, trivially-reproducible reading). If a
+# redundant group were marked disjunctive via edge_overrides, the availability envelope would
+# rise — left out of the headline to keep the v1-vs-v2 message clean.
