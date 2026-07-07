@@ -47,6 +47,26 @@ The application key carries the permissions; request the scopes matching the fea
 The target app must actually emit APM traces — the service map is built from traces, so no traces
 means no topology.
 
+## What `slacheck explore` shows
+
+`slacheck explore` runs a read-only inventory of the org — one section per API, fail-soft (a
+missing scope marks its section with the scope to grant instead of aborting). Add `--json` for the
+raw payloads.
+
+| Report section | Endpoint | Scope |
+|---|---|---|
+| Auth & org | `GET /api/v1/validate` | (API key only) |
+| APM services & dependencies | `GET /api/v1/service_dependencies` (§1a, catalog fallback §1b) | `apm_read` |
+| Active metrics | `GET /api/v1/metrics` (`MetricsApi.list_active_metrics`) — grouped by family, incl. the `trace.*` stats usable as `DD_TRACE_STAT` | `metrics_read` |
+| SLOs | `GET /api/v1/slo` (§3) | `slos_read` |
+| Monitors | `GET /api/v1/monitor` (§3) | `monitors_read` |
+| Dashboards | `GET /api/v1/dashboard` — flags the ones slacheck published | `dashboards_read` |
+| Software Catalog | `GET /api/v2/catalog/entity` + `/relation` — diffed against the APM map | `apm_service_catalog_read` |
+| Hosts | `GET /api/v1/hosts/totals` | (standard) |
+
+Available in the API but deliberately not queried (admin-level scopes or noise): events, logs
+search, usage/billing, Cloud Cost Management (see §4 on why cost has no per-service source).
+
 ## 1. Topology — service dependency graph
 
 Graph nodes and edges come from APM. This replaces the paper's hand-written YAML.

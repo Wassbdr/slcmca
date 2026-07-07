@@ -82,6 +82,7 @@ Reproduire le live (nécessite les credentials Datadog dans `.env` ; suppose que
 émet déjà du trafic tracé par APM) :
 
 ```bash
+slacheck explore                                     # inventaire de ce que l'org expose
 DD_ENV=devolab slacheck record  --out fixtures/datadog_live
 DD_ENV=devolab slacheck analyze --source live -e ts-ui-dashboard -c latency \
     --service-prefix ts- --exclude-contains with-jaeger

@@ -15,6 +15,7 @@ verify without printing the key:
 
 ```bash
 slacheck doctor          # must report all scopes green
+slacheck explore         # org reconnaissance: which sections are readable, which scopes are missing
 ```
 
 See `docs/datadog_api_catalog.md` → "Access checklist" for the exact scope names.

@@ -30,23 +30,24 @@ _QUERIES = {
     "request_count": "sum:trace.servlet.request.hits{*} by {service}.as_count()",
 }
 
+def build_config(settings: Settings):
+    """SDK Configuration from Settings (shared by the pipeline client and the inventory)."""
+    from datadog_api_client import Configuration
+
+    config = Configuration()
+    config.api_key["apiKeyAuth"] = settings.api_key
+    config.api_key["appKeyAuth"] = settings.app_key
+    config.server_variables["site"] = settings.site
+    return config
+
+
 class LiveClient:
     """Talks to the real Datadog API. Requires the ``datadog`` extra and credentials."""
 
     def __init__(self, settings: Settings, window_seconds: int = 3600) -> None:
         self._settings = settings
         self._window = window_seconds
-        self._config = self._build_config(settings)
-
-    @staticmethod
-    def _build_config(settings: Settings):
-        from datadog_api_client import Configuration
-
-        config = Configuration()
-        config.api_key["apiKeyAuth"] = settings.api_key
-        config.api_key["appKeyAuth"] = settings.app_key
-        config.server_variables["site"] = settings.site
-        return config
+        self._config = build_config(settings)
 
     # ------------------------------------------------------------------ validate
     def validate(self) -> bool:

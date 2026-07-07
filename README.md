@@ -34,9 +34,14 @@ slacheck analyze --source fixture --entrypoint ts-gateway-service --constraint a
 
 ## Live mode (requires keys — see docs/datadog_api_catalog.md)
 
+The tool is 100% Datadog: topology, metrics, SLOs, monitors and dashboards all come from the
+Datadog API — no other data source or cluster access is needed.
+
 ```bash
 cp .env.example .env        # fill DD_API_KEY / DD_APP_KEY / DD_SITE / DD_ENV
 pip install -e ".[dev,datadog]"
+slacheck doctor             # validate the credentials (no key is printed)
+slacheck explore            # inventory everything readable from the org (services, metrics, SLOs…)
 slacheck catalog            # what data Datadog exposes (also a static doc in docs/)
 slacheck record             # capture real API responses into fixtures/datadog/
 slacheck analyze --source live --entrypoint ts-gateway-service --constraint latency

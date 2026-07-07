@@ -3,6 +3,7 @@
 Commands:
   analyze   run the pipeline and print envelope + faults (fixture or live)
   publish   build the dashboard and push it to Datadog (live, needs dashboards_write)
+  explore   inventory everything readable from the Datadog org (live, fail-soft per section)
   record    capture live API responses into fixtures/datadog/ (live, needs keys)
   catalog   point to the Datadog API catalog doc
 """
@@ -178,6 +179,42 @@ def publish(
 
     url = do_publish(dashboard, Settings())
     typer.secho(f"Published: {url}", fg=typer.colors.GREEN)
+
+
+@app.command()
+def explore(
+    window_hours: int = typer.Option(24, help="Lookback window for the active-metrics list."),
+    as_json: bool = typer.Option(False, "--json", help="Raw per-section payloads as JSON."),
+) -> None:
+    """Inventory everything slacheck can read from the Datadog org (fail-soft per section)."""
+    settings = Settings()
+    if not settings.has_credentials:
+        typer.secho(
+            "Missing DD_API_KEY and/or DD_APP_KEY in .env — explore needs live access. "
+            "Run `slacheck doctor` first.",
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(code=1)
+
+    from slacheck.datadog.inventory import format_report, run_inventory
+
+    sections = run_inventory(settings, window_hours=window_hours)
+    if as_json:
+        typer.echo(json.dumps(
+            [
+                {"title": s.title, "ok": s.ok, "error": s.error, "raw": s.raw}
+                for s in sections
+            ],
+            indent=2,
+            default=str,
+        ))
+        return
+    typer.echo(format_report(sections))
+    if any(not s.ok for s in sections):
+        typer.secho(
+            "\nSome sections were denied or empty — see the !! lines above for the scope to grant.",
+            fg=typer.colors.YELLOW,
+        )
 
 
 @app.command()
