@@ -39,7 +39,7 @@ The application key carries the permissions; request the scopes matching the fea
 |---|---|
 | `apm_read` | service map / service dependencies (topology) |
 | `apm_service_catalog_read` | software catalog (declared dependencies, enrichment) |
-| `metrics_read` | timeseries: latency p99, error rate, request rate, k8s resources |
+| `metrics_read` | timeseries: latency p99, error rate, request rate |
 | `slos_read` | existing SLOs (comparison only) |
 | `monitors_read` | existing monitors (context only) |
 | `dashboards_read`, `dashboards_write` | publish the verdict dashboard |
@@ -100,41 +100,18 @@ is surfaced in the verdict and the dashboard note.
 - Monitors (v1): `MonitorsApi.list_monitors()` (GET `/api/v1/monitor`) — context on what is alerting;
   not used in the envelope math.
 
-## 4. Kubernetes resources
-
-Infrastructure signals available even when APM tracing is sparse.
-
-- Hosts (v1): `HostsApi.list_hosts()` (GET `/api/v1/hosts`).
-- Container/k8s metrics, grouped by `kube_deployment` (which matches the service name):
-
-  | signal | query |
-  |---|---|
-  | CPU (nanocores) | `avg:kubernetes.cpu.usage.total{kube_namespace:<ns>} by {kube_deployment}` |
-  | memory (bytes) | `avg:kubernetes.memory.usage{kube_namespace:<ns>} by {kube_deployment}` |
-  | restarts | `sum:kubernetes.containers.restarts{kube_namespace:<ns>} by {kube_deployment}` |
-
-Wired via `live_client.k8s_metric_series` / `metrics.collect_k8s_metrics` into `Component.resources`
-(`ResourceMetrics`), shown in the dashboard's "Resource Health (k8s)" group. These also feed the
-operational translation (paper §III-D: throughput SLO → CPU > 80% trigger).
-
-## 5. Cost — the gap and two stand-ins
+## 4. Cost — the gap and the stand-in
 
 Datadog does not expose per-microservice cost. Cloud Cost Management (`cloud_cost_management_api.*`)
 returns the cloud bill by account/tag, not a per-service EUR/h, and mapping a bill line to a service
 is not something the API provides. slacheck never fabricates a cost:
 
-- **k8s resource model (live, automatic).** `kubernetes.cpu.requests` (cores) and
-  `kubernetes.memory.requests` (bytes) flow live, so slacheck estimates
-  `cost_eur_h ≈ cpu_cores·cpu_eur_per_core_h + mem_gb·mem_eur_per_gb_h` from a `pricing.yaml`
-  (`models.Pricing`, `metrics.k8s_cost_model`, `--pricing`). A reservation estimate, not a bill, but
-  live and per-service — symmetric to the availability readiness proxy.
 - **Declared overrides (exact).** `cost_overrides.yaml` (per-service EUR/h, hand-supplied like the
-  paper's YAML) takes precedence when present.
+  paper's YAML) via `--cost-overrides`.
 
-`cost_eur_h` stays `None` unless `--pricing` or `--cost-overrides` is given, and the verdict records
-the source (e.g. `cost_source: k8s_resource_model`).
+`cost_eur_h` stays `None` unless `--cost-overrides` is given.
 
-## 6. Dashboard publishing
+## 5. Dashboard publishing
 
 - SDK v1: `DashboardsApi.create_dashboard(body=...)` (POST `/api/v1/dashboard`), with
   `update_dashboard` for idempotent re-push (search by title first). Needs `dashboards_write`.
@@ -150,5 +127,5 @@ the source (e.g. `cost_source: k8s_resource_model`).
 | response time per service | p99 trace duration (§2) | yes |
 | availability per service | error/hit counts (§2) | yes (success proxy, not uptime) |
 | request rate | trace hits as_rate (§2) | yes |
-| per-service cost | — | no direct source (§5 stand-ins) |
-| publish dashboard | Dashboards API (§6) | yes (needs `dashboards_write`) |
+| per-service cost | — | no direct source (§4 stand-in) |
+| publish dashboard | Dashboards API (§5) | yes (needs `dashboards_write`) |

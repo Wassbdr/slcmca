@@ -30,8 +30,8 @@ The principal request-path edges observed live agree with the declared graph, e.
 ```bash
 # .env must set DD_ENV to whatever the cluster agent tags the app's traces with.
 # 1) generate traffic (without it APM records no inter-service edges):
-kubectl port-forward -n <namespace> svc/ts-ui-dashboard 18080:8080 &
-#    then loop login + travel queries for ~2-3 min and wait for aggregation, e.g.:
+#    loop login + travel queries against the app's entry endpoint for ~2-3 min
+#    and wait for aggregation, e.g.:
 #    POST /api/v1/users/login  {"username":"fdse_microservice","password":"111111"}
 #    POST /api/v1/travelservice/trips/left  {"startingPlace":"Shanghai","endPlace":"Suzhou",...}
 # 2) capture the real responses into this directory:
@@ -42,5 +42,4 @@ DD_ENV=<your-env> slacheck record --out fixtures/datadog_live
 The org exposed **no SLOs for the train-ticket services** — which is precisely lesson L2 of the
 paper (contractual SLOs are rarely exposed by the backend; infrastructure proxies fill the gap).
 The handful of unrelated org SLOs returned by the API were removed from this capture for privacy,
-leaving the (empty) response shape. The k8s resource fixtures (`k8s_*.json`) are large real
-captures used by the cost and readiness-availability models.
+leaving the (empty) response shape.

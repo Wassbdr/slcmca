@@ -1,9 +1,0 @@
-{
-  "_comment": "kubernetes.cpu.requests by kube_deployment (cores). Feeds the cost model with k8s_mem_requests.json.",
-  "series": [
-    { "scope": "kube_deployment:ts-gateway-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 0.1]] },
-    { "scope": "kube_deployment:ts-travel-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 0.2]] },
-    { "scope": "kube_deployment:ts-route-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 0.1]] },
-    { "scope": "kube_deployment:ts-station-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 0.15]] }
-  ]
-}

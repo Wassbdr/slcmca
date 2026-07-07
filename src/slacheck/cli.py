@@ -103,7 +103,6 @@ def analyze_cmd(
     min_availability_pct: float | None = typer.Option(None, help="Global target: min avail (%)."),
     max_cost_eur_h: float | None = typer.Option(None, help="Global target: max cost (EUR/h)."),
     cost_overrides: Path | None = typer.Option(None, help="YAML of per-service EUR/h (exact)."),
-    pricing: Path | None = typer.Option(None, help="YAML cloud unit prices (k8s cost model)."),
     service_prefix: str | None = typer.Option(None, help="Keep only services with this prefix."),
     exclude_contains: str | None = typer.Option(None, help="Drop services whose name has this."),
     edge_overrides: Path | None = typer.Option(None, help="YAML of disjunctive groups (v2)."),
@@ -125,14 +124,9 @@ def analyze_cmd(
         from slacheck.models import KnowledgeBase
 
         kb = KnowledgeBase(**yaml.safe_load(knowledge_base.read_text()))
-    price = None
-    if pricing is not None:
-        from slacheck.models import Pricing
-
-        price = Pricing(**yaml.safe_load(pricing.read_text()))
     result = analyze(
         src, entrypoint, constraint, target=target, sink=sink,  # type: ignore[arg-type]
-        paper_version=paper_version, edge_overrides=edges, kb=kb, pricing=price,  # type: ignore[arg-type]
+        paper_version=paper_version, edge_overrides=edges, kb=kb,  # type: ignore[arg-type]
         service_filter=svc_filter,
     )
     _apply_cost_overrides(result, cost_overrides)
@@ -153,7 +147,6 @@ def publish(
     sink: str | None = typer.Option(None, "--sink"),
     min_availability_pct: float | None = typer.Option(None),
     max_latency_ms: float | None = typer.Option(None),
-    pricing: Path | None = typer.Option(None, help="YAML cloud unit prices (k8s cost model)."),
     service_prefix: str | None = typer.Option(None, help="Keep only services with this prefix."),
     exclude_contains: str | None = typer.Option(None, help="Drop services whose name has this."),
     title: str | None = typer.Option(None, help="Dashboard title (idempotent key)."),
@@ -171,14 +164,9 @@ def publish(
             svc_filter["include_prefix"] = service_prefix
         if exclude_contains:
             svc_filter["exclude_contains"] = exclude_contains
-    price = None
-    if pricing is not None:
-        from slacheck.models import Pricing
-
-        price = Pricing(**yaml.safe_load(pricing.read_text()))
     result = analyze(
         src, entrypoint, constraint, target=target, sink=sink,  # type: ignore[arg-type]
-        paper_version=paper_version, pricing=price, service_filter=svc_filter,  # type: ignore[arg-type]
+        paper_version=paper_version, service_filter=svc_filter,  # type: ignore[arg-type]
     )
     dashboard = build_dashboard(result, title=title)
 

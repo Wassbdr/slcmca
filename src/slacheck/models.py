@@ -40,31 +40,6 @@ class SloValues(BaseModel):
         return 100.0 - self.availability_pct
 
 
-class Pricing(BaseModel):
-    """Cloud unit prices for the k8s resource-based cost model (paper §III-B cost SLO).
-
-    Datadog has no per-microservice cost, so cost is estimated from reserved CPU/memory:
-    ``cost_eur_h ≈ cpu_cores·cpu_eur_per_core_h + mem_gb·mem_eur_per_gb_h``. Defaults are
-    rough public cloud rates; override with a pricing YAML. This is an estimate, not a bill.
-    """
-
-    cpu_eur_per_core_h: float = 0.03
-    mem_eur_per_gb_h: float = 0.004
-
-
-class ResourceMetrics(BaseModel):
-    """Per-service Kubernetes resource signals (infra health, beyond the paper's SLOs).
-
-    These come from ``kubernetes.*`` metrics tagged by ``kube_deployment`` and are
-    available even when APM tracing is not (see docs/datadog_api_catalog.md §4). They
-    enrich the verdict with a resource-pressure view; they do not feed the SLA operators.
-    """
-
-    cpu_nanocores: float | None = None  # avg kubernetes.cpu.usage.total (nanocores)
-    mem_bytes: float | None = None  # avg kubernetes.memory.usage (bytes)
-    restarts: float | None = None  # sum kubernetes.containers.restarts over the window
-
-
 class CspProfile(BaseModel):
     """CSP reliability properties used to derive the safety margin γ (paper §III-B).
 
@@ -80,7 +55,7 @@ class CspProfile(BaseModel):
 
 
 class Component(BaseModel):
-    """A service node: its name, optional CSP, measured Sub-SLO, infra resources, and raw sample.
+    """A service node: its name, optional CSP, measured Sub-SLO, and raw sample.
 
     ``sample`` keeps the raw Datadog counters (request_count / error_count) for
     traceability so a verdict can be audited back to the metrics it came from.
@@ -89,7 +64,6 @@ class Component(BaseModel):
     name: str
     csp: str | None = None
     slo: SloValues = Field(default_factory=SloValues)
-    resources: ResourceMetrics = Field(default_factory=ResourceMetrics)
     csp_profile: CspProfile | None = None  # paper-v2: drives the safety margin γ
     sample: dict = Field(default_factory=dict)
 

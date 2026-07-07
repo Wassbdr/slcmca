@@ -101,5 +101,3 @@ Three components UI/Auth/Stor, each 99.9% availability → envelope `100 − 3×
 1. **Live topology** from Datadog APM instead of hand-written YAML.
 2. **Critical-path extraction** (v1) / **typed-DAG projection** (v2) on a real branching topology.
 3. **Datadog dashboard** as the output surface (the papers just print to stdout).
-4. **Kubernetes resource enrichment** (CPU/mem/restarts per service) — a live signal available even
-   when APM tracing is not.

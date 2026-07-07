@@ -22,7 +22,7 @@ from pathlib import Path
 
 import yaml
 
-from slacheck.datadog.source import DatadogSource, K8sMetricKind, MetricKind
+from slacheck.datadog.source import DatadogSource, MetricKind
 
 
 class DeclaredClient:
@@ -46,9 +46,6 @@ class DeclaredClient:
 
     def metric_series(self, kind: MetricKind) -> dict:
         return self._metrics.metric_series(kind)
-
-    def k8s_metric_series(self, kind: K8sMetricKind) -> dict:
-        return self._metrics.k8s_metric_series(kind)
 
     def list_slos(self) -> dict:
         return self._metrics.list_slos()

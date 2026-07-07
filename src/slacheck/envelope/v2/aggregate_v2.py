@@ -136,7 +136,6 @@ def compute_commit_envelope_v2(graph: DependencyGraph, kb: KnowledgeBase | None)
             name=comp.name,
             csp=comp.csp,
             slo=adjust_slo(comp.slo, comp.csp_profile, kb.margin_config),
-            resources=comp.resources,
             csp_profile=comp.csp_profile,
             sample=comp.sample,
         )

@@ -23,19 +23,9 @@ See `docs/datadog_api_catalog.md` → "Access checklist" for the exact scope nam
 
 The agent only emits spans for serviced requests; with no traffic the service map is empty and
 `trace.servlet.request` (the real Java/Spring trace metric, in **seconds** → converted to ms in
-`datadog/live_client.py`) never aggregates. Drive sustained load (paper §IV, lesson L1 — the
-default head-based trace sampling needs both volume and, if necessary, a forced sample rate; see
-`scripts/loadgen/`):
-
-```bash
-kubectl port-forward -n <namespace> svc/ts-ui-dashboard 18080:8080 &
-scripts/loadgen/run_bash_load.sh 1800    # or the locustfile for higher RPS
-# the booking flow exercises the hub services: ts-order, ts-station, ts-travel, ts-route, ts-seat;
-# wait ~90s for aggregation.
-```
-
-Avoid triggering a mass rollout of the app's namespace (a large simultaneous restart can saturate
-the container runtime).
+`datadog/live_client.py`) never aggregates. Drive sustained load against the app's entry endpoint
+with your load tool of choice (paper §IV, lesson L1 — the default head-based trace sampling needs
+both volume and, if necessary, a forced sample rate), then wait ~90s for aggregation.
 
 ## 3. Capture, analyse live, publish
 
@@ -43,8 +33,7 @@ the container runtime).
 DD_ENV=<your-env> slacheck record --out fixtures/datadog_live       # seed real fixtures
 DD_ENV=<your-env> slacheck analyze --source live --paper-version v2 \
     -e ts-ui-dashboard -c latency --service-prefix ts- \
-    --exclude-contains with-jaeger \
-    --pricing fixtures/scenarios/pricing.example.yaml                # live latency once dense enough
+    --exclude-contains with-jaeger                                   # live latency once dense enough
 slacheck publish --source live ...                                  # needs dashboards_write
 ```
 

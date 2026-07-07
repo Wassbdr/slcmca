@@ -1,9 +1,0 @@
-{
-  "_comment": "kubernetes_state.deployment.replicas_ready by kube_deployment. With replicas_desired, yields the availability proxy = ready/desired*100 when APM availability is absent.",
-  "series": [
-    { "scope": "kube_deployment:ts-gateway-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 1.0]] },
-    { "scope": "kube_deployment:ts-travel-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 1.0]] },
-    { "scope": "kube_deployment:ts-route-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 1.0]] },
-    { "scope": "kube_deployment:ts-station-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 0.0]] }
-  ]
-}

@@ -1,9 +1,0 @@
-{
-  "_comment": "sum kubernetes.containers.restarts by kube_deployment over the window.",
-  "series": [
-    { "scope": "kube_deployment:ts-gateway-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 0.0]] },
-    { "scope": "kube_deployment:ts-travel-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 3.0]] },
-    { "scope": "kube_deployment:ts-route-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 1.0]] },
-    { "scope": "kube_deployment:ts-station-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 0.0]] }
-  ]
-}

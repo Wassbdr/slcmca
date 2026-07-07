@@ -1,9 +1,0 @@
-{
-  "_comment": "kubernetes.memory.requests by kube_deployment (bytes). 300Mi = 314572800.",
-  "series": [
-    { "scope": "kube_deployment:ts-gateway-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 314572800.0]] },
-    { "scope": "kube_deployment:ts-travel-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 536870912.0]] },
-    { "scope": "kube_deployment:ts-route-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 314572800.0]] },
-    { "scope": "kube_deployment:ts-station-service,kube_namespace:tt-slacheck", "pointlist": [[1700000060000, 419430400.0]] }
-  ]
-}

@@ -60,7 +60,7 @@ The individual levels, if you want them one at a time:
 python scripts/case_study.py          # v2: 6 faults / env 98.36%; v1: 3 / 99.40%; latency false-negative
 slacheck analyze --source declared --topology fixtures/topology/train-ticket.yaml \
   --metrics-from fixture --paper-version v2 -e ts-ui-dashboard -c availability \
-  --min-availability-pct 99.9 --pricing fixtures/scenarios/pricing.example.yaml
+  --min-availability-pct 99.9
 
 # 2. Multiple real systems — train-ticket + Online Boutique (call graph from the GCP manifest):
 python scripts/multi_system_study.py  # emits Table tab:realsystems

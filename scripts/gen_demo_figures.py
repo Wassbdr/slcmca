@@ -24,12 +24,10 @@ import networkx as nx
 import yaml
 
 from slacheck.datadog.source import get_source
-from slacheck.models import Pricing
 from slacheck.pipeline import analyze
 
 REPO = Path(__file__).resolve().parents[1]
 TOPO = REPO / "fixtures" / "topology" / "train-ticket.yaml"
-PRICING = REPO / "fixtures" / "scenarios" / "pricing.example.yaml"
 ENTRY = "ts-ui-dashboard"
 OUT = REPO / "figures" / "demo"
 OUT.mkdir(parents=True, exist_ok=True)
@@ -60,9 +58,8 @@ def _graph() -> nx.DiGraph:
 
 def _real_path(constraint: str) -> list[str]:
     """The ACTUAL critical path the pipeline extracts for this constraint (v1)."""
-    pricing = Pricing(**yaml.safe_load(PRICING.read_text()))
     src = get_source("declared", topology=TOPO, metrics_from="fixture")
-    res = analyze(src, ENTRY, constraint, paper_version="v1", pricing=pricing)
+    res = analyze(src, ENTRY, constraint, paper_version="v1")
     return [c.name for c in res.path]
 
 

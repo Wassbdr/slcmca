@@ -78,19 +78,15 @@ Le pipeline complet tourne en live sur le déploiement train-ticket : découvert
 récupération des latences de trace, calcul de l'enveloppe, et **publication d'un dashboard Datadog**
 portant le verdict (chemin critique, enveloppe, fautes d'over-commitment, timeseries par service).
 
-Reproduire le live (nécessite les credentials Datadog dans `.env` et l'accès au cluster) :
+Reproduire le live (nécessite les credentials Datadog dans `.env` ; suppose que l'application
+émet déjà du trafic tracé par APM) :
 
 ```bash
-kubectl port-forward -n tt-slacheck svc/ts-ui-dashboard 18080:8080 &
-scripts/loadgen/run_bash_load.sh 240                 # générer du trafic (peupler les traces)
 DD_ENV=devolab slacheck record  --out fixtures/datadog_live
 DD_ENV=devolab slacheck analyze --source live -e ts-ui-dashboard -c latency \
-    --service-prefix ts- --exclude-contains with-jaeger \
-    --pricing fixtures/scenarios/pricing.example.yaml
+    --service-prefix ts- --exclude-contains with-jaeger
 DD_ENV=devolab slacheck publish --source live -e ts-ui-dashboard -c latency \
-    --service-prefix ts- --exclude-contains with-jaeger \
-    --pricing fixtures/scenarios/pricing.example.yaml
+    --service-prefix ts- --exclude-contains with-jaeger
 ```
 
-Runbook complet (scopes, sampling APM, génération de trafic) : `docs/live_unblock.md` et
-`scripts/loadgen/`.
+Runbook complet (scopes, prérequis de trafic) : `docs/live_unblock.md`.

@@ -10,29 +10,22 @@ from __future__ import annotations
 
 import networkx as nx
 
-from slacheck.datadog.metrics import (
-    collect_k8s_metrics,
-    collect_with_samples,
-    k8s_availability_proxy,
-    k8s_cost_model,
-)
+from slacheck.datadog.metrics import collect_with_samples
 from slacheck.datadog.source import DatadogSource
 from slacheck.datadog.topology import filter_deps, parse_edges, parse_services
-from slacheck.models import Component, Pricing, ResourceMetrics, SloValues
+from slacheck.models import Component, SloValues
 
 
 def build_graph(
     source: DatadogSource,
     entrypoint: str | None = None,
-    pricing: Pricing | None = None,
     service_filter: dict | None = None,
 ) -> tuple[nx.DiGraph, list[tuple[str, str]]]:
     """Assemble the topology graph. Returns ``(dag, dropped_edges)``.
 
     Each node carries a ``component`` attribute (a :class:`Component` with measured SLOs).
     If ``entrypoint`` is given, cycles are broken from its perspective (back-edges first),
-    which preserves forward reachability from the entrypoint. If ``pricing`` is given, a
-    per-service cost is estimated from reserved k8s resources where APM/declared cost is absent.
+    which preserves forward reachability from the entrypoint.
     ``service_filter`` (kwargs for :func:`filter_deps`, e.g. ``{"include_prefix": "ts-"}``)
     restricts a live cluster-wide topology to the app under study.
     """
@@ -42,26 +35,11 @@ def build_graph(
     edges = parse_edges(deps)
     services = parse_services(deps)
     slo_by_service = collect_with_samples(source)
-    k8s_by_service = collect_k8s_metrics(source)
-    avail_proxy = k8s_availability_proxy(source)
-    cost_model = k8s_cost_model(source, pricing) if pricing is not None else {}
 
     g = nx.DiGraph()
     for name in sorted(services):
         slo, sample = slo_by_service.get(name, (SloValues(), {}))
-        # fall back to the k8s readiness proxy only when APM gives no availability
-        if slo.availability_pct is None and name in avail_proxy:
-            slo = slo.model_copy(update={"availability_pct": avail_proxy[name]})
-            sample = {**sample, "availability_source": "k8s_readiness_proxy"}
-        # estimate cost from reserved resources only when no cost is otherwise present
-        if slo.cost_eur_h is None and name in cost_model:
-            slo = slo.model_copy(update={"cost_eur_h": cost_model[name]})
-            sample = {**sample, "cost_source": "k8s_resource_model"}
-        resources = k8s_by_service.get(name, ResourceMetrics())
-        g.add_node(
-            name,
-            component=Component(name=name, slo=slo, resources=resources, sample=sample),
-        )
+        g.add_node(name, component=Component(name=name, slo=slo, sample=sample))
     g.add_edges_from(edges)
 
     dropped = _break_cycles(g, entrypoint)

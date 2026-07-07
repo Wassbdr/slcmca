@@ -23,15 +23,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-import yaml
-
 from slacheck.datadog.source import get_source
-from slacheck.models import Pricing, SloValues
+from slacheck.models import SloValues
 from slacheck.pipeline import AnalysisResult, analyze
 
 REPO = Path(__file__).resolve().parents[1]
 TOPOLOGY = REPO / "fixtures" / "topology" / "train-ticket.yaml"
-PRICING = REPO / "fixtures" / "scenarios" / "pricing.example.yaml"
 ENTRYPOINT = "ts-ui-dashboard"
 
 # Architect Global-SLOs chosen to expose the topology-coverage gap on a real system.
@@ -45,11 +42,8 @@ def _run(
     target: SloValues,
 ) -> AnalysisResult:
     """Run the pipeline on declared train-ticket with fixture metrics."""
-    pricing = Pricing(**yaml.safe_load(PRICING.read_text()))
     source = get_source("declared", topology=TOPOLOGY, metrics_from="fixture")
-    return analyze(
-        source, ENTRYPOINT, constraint, target=target, paper_version=version, pricing=pricing
-    )
+    return analyze(source, ENTRYPOINT, constraint, target=target, paper_version=version)
 
 
 def _descending(result: AnalysisResult) -> set[str]:

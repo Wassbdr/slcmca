@@ -24,17 +24,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-import yaml
-
 from slacheck.datadog.declared_client import DeclaredClient
-from slacheck.datadog.source import K8sMetricKind, MetricKind, get_source
-from slacheck.models import Pricing, SloValues
+from slacheck.datadog.source import MetricKind, get_source
+from slacheck.models import SloValues
 from slacheck.pipeline import AnalysisResult, analyze
 
 REPO = Path(__file__).resolve().parents[1]
 TT_TOPO = REPO / "fixtures/topology/train-ticket.yaml"
 OB_TOPO = REPO / "fixtures/topology/real/online-boutique.yaml"
-PRICING = REPO / "fixtures/scenarios/pricing.example.yaml"
 
 NOMINAL_AVAIL = 99.9   # % per-service Sub-SLO for systems without trace fixtures
 AVAIL_TARGET = 99.9    # % architect Global-SLO
@@ -44,11 +41,9 @@ AVAIL_TARGET = 99.9    # % architect Global-SLO
 
 
 def _tt(version: Literal["v1", "v2"]) -> AnalysisResult:
-    pricing = Pricing(**yaml.safe_load(PRICING.read_text()))
     src = get_source("declared", topology=TT_TOPO, metrics_from="fixture")
     return analyze(src, "ts-ui-dashboard", "availability",
-                   target=SloValues(availability_pct=AVAIL_TARGET), paper_version=version,
-                   pricing=pricing)
+                   target=SloValues(availability_pct=AVAIL_TARGET), paper_version=version)
 
 
 # ---- Online Boutique: nominal Sub-SLO (structural-coverage evidence) --------------------------
@@ -75,9 +70,6 @@ class NominalSource:
         return {"series": [
             {"scope": f"service:{s}", "pointlist": [[0.0, val]]} for s in self._services
         ]}
-
-    def k8s_metric_series(self, kind: K8sMetricKind) -> dict:
-        return {"series": []}
 
     def list_slos(self) -> dict:
         return {"data": []}

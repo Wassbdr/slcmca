@@ -4,7 +4,7 @@ Widgets:
   - note: the envelope verdict (green if feasible, red otherwise)
   - group "Critical Path": one timeseries per path service (p99 latency + error rate)
   - group "Over-Commitment Faults": one note per fault
-  - group "Topology": the extracted path + any dropped cycle edges + caveats
+  - group "Topology & Caveats": the extracted path + any dropped cycle edges + caveats
 """
 
 from __future__ import annotations
@@ -17,9 +17,6 @@ from slacheck.pipeline import AnalysisResult
 # duration is the base metric, not a ``.duration`` suffix).
 _LATENCY_Q = "p99:trace.servlet.request{{service:{svc}}}"
 _ERRORS_Q = "sum:trace.servlet.request.errors{{service:{svc}}}.as_count()"
-# k8s resource templates — available without APM (catalog §4), keyed by kube_deployment
-_CPU_Q = "avg:kubernetes.cpu.usage.total{{kube_deployment:{svc}}}"
-_MEM_Q = "avg:kubernetes.memory.usage{{kube_deployment:{svc}}}"
 
 
 def _fmt_env(env) -> str:
@@ -73,19 +70,6 @@ def _timeseries(svc: str) -> dict:
     }
 
 
-def _resource_timeseries(svc: str) -> dict:
-    return {
-        "definition": {
-            "type": "timeseries",
-            "title": f"{svc} — resources",
-            "requests": [
-                {"q": _CPU_Q.format(svc=svc), "display_type": "line"},
-                {"q": _MEM_Q.format(svc=svc), "display_type": "line"},
-            ],
-        }
-    }
-
-
 def _group(title: str, widgets: list[dict], color: str = "vivid_blue") -> dict:
     return {
         "definition": {
@@ -131,7 +115,6 @@ def build_dashboard(result: AnalysisResult, title: str | None = None) -> dict:
     widgets = [
         _note(_verdict_markdown(result), color=verdict_color, size="l"),
         _group("Critical Path", [_timeseries(svc) for svc in path]),
-        _group("Resource Health (k8s)", [_resource_timeseries(svc) for svc in path]),
         _group("Over-Commitment Faults", _fault_notes(verdict)),
         _group("Topology & Caveats", [_note("\n\n".join(topology_lines))]),
     ]

@@ -37,7 +37,6 @@ def test_metrics_delegated_to_inner_source(tmp_path):
     src = DeclaredClient(topo, inner)
     # delegation: same payload the inner source returns
     assert src.metric_series("latency_p99") == inner.metric_series("latency_p99")
-    assert src.k8s_metric_series("cpu_nanocores") == inner.k8s_metric_series("cpu_nanocores")
 
 
 def test_factory_requires_topology():
