@@ -17,6 +17,7 @@ from pathlib import Path
 import typer
 import yaml
 
+from slacheck.availability import check_availability
 from slacheck.config import Settings
 from slacheck.datadog.source import get_source
 from slacheck.models import SloValues
@@ -309,6 +310,9 @@ def check(
     max_cost_eur_h: float | None = typer.Option(None, help="Target max cost (EUR/h)."),
     paper_version: str = typer.Option("v2", "--paper-version", help="v1 | v2"),
     both: bool = typer.Option(False, help="Run v1 (baseline) and v2 (full method) in turn."),
+    independent: bool = typer.Option(
+        False, "--independent", help="Check only availability using independent service states."
+    ),
 ) -> None:
     """Check a self-contained topology YAML (components, edges, SLOs) against a target.
 
@@ -330,6 +334,32 @@ def check(
     target = sc["target"]
     if overrides:
         target = (target or SloValues()).model_copy(update=overrides)
+
+    if independent:
+        other_metrics = max_latency_ms is not None or max_cost_eur_h is not None
+        if both or paper_version != "v2" or other_metrics:
+            raise typer.BadParameter("--independent checks availability only; use it with --slo.")
+        if target is None or target.availability_pct is None:
+            raise typer.BadParameter("Pass --slo or set global_target.availability_pct.")
+        try:
+            result = check_availability(graph, target.availability_pct)
+        except ValueError as exc:
+            raise typer.BadParameter(str(exc)) from exc
+        typer.echo("Model: independent service states; declared availabilities without margins.")
+        typer.echo(f"Target: {result.target_pct:.12g}%")
+        typer.echo(f"Achievable: {result.achievable_pct:.12g}%")
+        typer.echo("Minimum availability with all other services unchanged:")
+        for name, threshold in result.thresholds_pct.items():
+            value = (
+                "not repairable by this service alone"
+                if threshold is None
+                else f"{threshold:.12g}%"
+            )
+            typer.echo(f"  {name}: {value}")
+        typer.echo("Feasible" if result.feasible else "Infeasible")
+        if not result.feasible:
+            raise typer.Exit(code=1)
+        return
 
     if target is not None:
         typer.echo(f"Target Global-SLO : {target.model_dump(exclude_none=True)}")
