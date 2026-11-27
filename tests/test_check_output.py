@@ -1,9 +1,13 @@
 import json
+from pathlib import Path
 
 import pytest
+from jsonschema import Draft7Validator
 from typer.testing import CliRunner
 
 from slacheck.cli import app
+
+_SARIF_SCHEMA = Path(__file__).with_name("sarif-schema-2.1.0.json")
 
 
 @pytest.fixture
@@ -81,6 +85,17 @@ def test_feasible_sarif_has_no_results(topology):
     )
     assert run.exit_code == 0, run.output
     assert json.loads(run.stdout)["runs"][0]["results"] == []
+
+
+@pytest.mark.parametrize(
+    ("options", "exit_code"),
+    [([], 1), (["--slo", "99.8"], 0), (["--method", "v2"], 1), (["--both"], 1)],
+)
+def test_sarif_matches_official_schema(topology, options, exit_code):
+    run = CliRunner().invoke(app, ["check", str(topology), "--format", "sarif", *options])
+    assert run.exit_code == exit_code, run.output
+    schema = json.loads(_SARIF_SCHEMA.read_text(encoding="utf-8"))
+    Draft7Validator(schema).validate(json.loads(run.stdout))
 
 
 def test_legacy_both_can_emit_json(topology):

@@ -1,7 +1,10 @@
 """Kubernetes resource enrichment: collect_k8s_metrics + graph builder attaches resources."""
 
+from shutil import copytree
+
 import pytest
 
+from slacheck.datadog import fixture_client
 from slacheck.datadog.fixture_client import FixtureClient
 from slacheck.datadog.metrics import collect_k8s_metrics
 from slacheck.graph.builder import build_graph
@@ -38,3 +41,11 @@ def test_missing_k8s_fixture_is_graceful(tmp_path):
     # a source with no k8s fixtures returns empty, not an error
     client = FixtureClient(fixtures_dir=tmp_path)
     assert client.k8s_metric_series("cpu_nanocores") == {"series": []}
+
+
+def test_fixture_client_uses_installed_data(tmp_path, monkeypatch, fixtures_dir):
+    package = tmp_path / "site-packages" / "slacheck"
+    copytree(fixtures_dir, package / "datadog_fixtures")
+    monkeypatch.setattr(fixture_client, "__file__", str(package / "datadog" / "fixture_client.py"))
+    monkeypatch.chdir(tmp_path)
+    assert "ts-gateway-service" in FixtureClient().service_dependencies()

@@ -7,9 +7,10 @@ happens in topology.py / metrics.py so the same parsers run on live and fixture 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
-from slacheck.config import Settings
+if TYPE_CHECKING:
+    from slacheck.config import Settings
 
 SourceKind = Literal["fixture", "live", "declared"]
 MetricKind = Literal["latency_p99", "error_count", "request_count"]
@@ -60,6 +61,7 @@ def get_source(
         return FixtureClient()
 
     if kind == "live":
+        from slacheck.config import Settings
         from slacheck.datadog.live_client import LiveClient
 
         settings = settings or Settings()
