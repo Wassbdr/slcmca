@@ -1,0 +1,18 @@
+name: Availability commitment
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  slacheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Wassbdr/slcmca@showcase/2026-11
+        with:
+          topology: examples/shop-openslo.yaml
+          graph: examples/shop.yaml
+          upload-sarif: ${{ github.event.pull_request.head.repo.fork == false }}
