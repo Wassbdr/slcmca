@@ -21,7 +21,7 @@
   },
   "reproduce": [
     "python -m pip install .",
-    "slacheck check examples/shop.yaml --independent --slo 99.94",
+    "slacheck check examples/shop.yaml --slo 99.94",
     "make bench",
     "make showcase"
   ],
@@ -46,7 +46,7 @@
     },
     {
       "label": "Slowest 200-service CLI run",
-      "value": "397.51 ms",
+      "value": "282.17 ms",
       "command": "make bench",
       "setup": "Two graphs, seven serial runs each. CPU: Intel(R) Xeon(R) Processor (x86_64); Python 3.10.12; no GPU."
     }

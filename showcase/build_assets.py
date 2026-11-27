@@ -36,8 +36,8 @@ def benchmark() -> tuple[dict[str, list[int]], str, float]:
             stats[method][2] += int(false_positives)
             if "/" in thresholds:
                 stats[method][3] += int(thresholds.split("/")[0])
-        elif section == "## Runtime" and line.startswith("| slacheck independent CLI |"):
-            timing = max(float(cell.split("/")[-1]) for cell in line.strip("|").split("|")[1:])
+        elif section == "## Runtime" and line.startswith("| slacheck independent CLI | CLI |"):
+            timing = max(float(cell.split("/")[-1]) for cell in line.strip("|").split("|")[2:])
     return stats, hardware, timing
 
 

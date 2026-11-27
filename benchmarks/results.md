@@ -44,15 +44,15 @@ plus threshold output for slacheck or validation or rule generation for referenc
 Reference manifests carry the same root objective and an SLI selector,
 not the graph or service availabilities.
 
-| Method | Development median / max | Held-out median / max |
-| --- | ---: | ---: |
-| slacheck independent | 2.07 / 2.35 | 3.99 / 10.90 |
-| slacheck v2 | 8.94 / 9.02 | 12.90 / 12.96 |
-| Hand error budget | 1.64 / 1.69 | 2.06 / 2.10 |
-| slacheck independent CLI | 321.11 / 330.19 | 350.03 / 397.51 |
-| Sloth | 21.90 / 23.69 | 22.74 / 24.56 |
-| Pyrra | 13.74 / 14.80 | 13.79 / 13.99 |
-| OpenSLO | 3.90 / 5.24 | 4.34 / 4.96 |
+| Method | Execution | Development median / max | Held-out median / max |
+| --- | --- | ---: | ---: |
+| slacheck independent | In process | 2.36 / 3.01 | 1.53 / 9.07 |
+| slacheck v2 | In process | 9.13 / 9.40 | 13.23 / 14.11 |
+| Hand error budget | In process | 1.65 / 1.78 | 2.08 / 2.27 |
+| slacheck independent CLI | CLI | 141.32 / 281.72 | 141.00 / 282.17 |
+| Sloth | CLI | 22.82 / 24.19 | 23.36 / 25.52 |
+| Pyrra | CLI | 14.11 / 14.53 | 14.26 / 16.28 |
+| OpenSLO | CLI | 4.31 / 5.15 | 4.27 / 4.99 |
 
 ## Iteration 1: model shared service states and solve conditional thresholds
 
