@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 from dataclasses import asdict
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 import yaml
@@ -24,19 +25,19 @@ from slacheck.availability import (
     check_availability,
     suggest_improvements,
 )
+from slacheck.check_input import load_check_input
 from slacheck.check_output import Finding, OutputFormat, sarif_report
-from slacheck.config import Settings
-from slacheck.datadog.source import get_source
-from slacheck.graph.trace_import import TraceSource, load_trace_graph
-from slacheck.models import SloValues
+from slacheck.graph.trace_import import TraceSource
 from slacheck.openslo import load_openslo_target
-from slacheck.pipeline import AnalysisResult, analyze
 
-app = typer.Typer(add_completion=False, help="Achievable SLA envelope from Datadog topology.")
+if TYPE_CHECKING:
+    from slacheck.models import SloValues, Verdict
+    from slacheck.pipeline import AnalysisResult
+
+app = typer.Typer(add_completion=False, help="Check service-level commitments.")
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _REPO_EVAL = _REPO_ROOT / "fixtures" / "eval"
-# Source checkout first; a regular `pip install .` ships the same files as slacheck/eval_fixtures.
 _EVAL_DATASET = _REPO_EVAL if _REPO_EVAL.is_dir() else Path(__file__).parent / "eval_fixtures"
 
 
@@ -61,6 +62,8 @@ def _build_target(
 ) -> SloValues | None:
     if max_latency_ms is None and min_availability_pct is None and max_cost_eur_h is None:
         return None
+    from slacheck.models import SloValues
+
     return SloValues(
         response_time_ms=max_latency_ms,
         availability_pct=min_availability_pct,
@@ -68,13 +71,12 @@ def _build_target(
     )
 
 
-def _render(result: AnalysisResult) -> None:
-    v = result.verdict
+def _render(v: Verdict, entrypoint: str, constraint: str, paper_version: str) -> None:
     env = v.envelope
-    typer.echo(f"\nEntrypoint : {result.entrypoint}")
-    typer.echo(f"Constraint : {result.constraint}")
-    typer.echo(f"Paper version : {result.paper_version}")
-    label = "Topological order" if result.paper_version == "v2" else "Critical path"
+    typer.echo(f"\nEntrypoint : {entrypoint}")
+    typer.echo(f"Constraint : {constraint}")
+    typer.echo(f"Paper version : {paper_version}")
+    label = "Topological order" if paper_version == "v2" else "Critical path"
     typer.echo(f"{label} : {' -> '.join(env.path)}")
     typer.echo("\nAchievable envelope (A*):")
     typer.echo(f"  latency      : {env.response_time_ms!r} ms")
@@ -125,6 +127,9 @@ def analyze_cmd(
     knowledge_base: Path | None = typer.Option(None, help="YAML knowledge base / margins (v2)."),
 ) -> None:
     """Run the pipeline and print the envelope and any faults."""
+    from slacheck.datadog.source import get_source
+    from slacheck.pipeline import analyze
+
     src = get_source(source, topology=topology, metrics_from=metrics_from)  # type: ignore[arg-type]
     target = _build_target(max_latency_ms, min_availability_pct, max_cost_eur_h)
     svc_filter: dict | None = None
@@ -156,7 +161,7 @@ def analyze_cmd(
         from slacheck.envelope.faults import evaluate
 
         result.verdict = evaluate(result.path, target)
-    _render(result)
+    _render(result.verdict, result.entrypoint, result.constraint, result.paper_version)
 
 
 @app.command()
@@ -176,6 +181,8 @@ def publish(
 ) -> None:
     """Build the verdict dashboard and push it to Datadog."""
     from slacheck.dashboard.builder import build_dashboard
+    from slacheck.datadog.source import get_source
+    from slacheck.pipeline import analyze
 
     src = get_source(source)  # type: ignore[arg-type]
     target = _build_target(max_latency_ms, min_availability_pct, None)
@@ -201,6 +208,7 @@ def publish(
         typer.echo(json.dumps(dashboard, indent=2))
         return
 
+    from slacheck.config import Settings
     from slacheck.dashboard.publisher import publish as do_publish
 
     url = do_publish(dashboard, Settings())
@@ -213,6 +221,8 @@ def record(
 ) -> None:
     """Capture live Datadog responses into fixtures/. Resilient: records what it can,
     reports which endpoints are denied (so you know exactly which scopes to request)."""
+    from slacheck.datadog.source import get_source
+
     src = get_source("live")
     out.mkdir(parents=True, exist_ok=True)
     captures = {
@@ -247,6 +257,8 @@ def record(
 @app.command()
 def doctor() -> None:
     """Check that .env credentials + site are accepted by Datadog (no key is printed)."""
+    from slacheck.config import Settings
+
     settings = Settings()
     api_state = "set" if settings.api_key else "MISSING"
     app_state = "set" if settings.app_key else "MISSING"
@@ -337,46 +349,23 @@ def check(
 
     Command-line targets override targets in the input. Exits 1 when the last check finds a fault.
     """
-    from slacheck.envelope.faults import evaluate as evaluate_v1
-    from slacheck.envelope.v2.evaluate_v2 import evaluate_v2
-    from slacheck.eval.runner import load_scenario
-
     if slo_name is not None and graph_file is None:
         raise typer.BadParameter("--slo-name requires OpenSLO YAML with --graph.")
     if improvement_costs is not None and not independent:
         raise typer.BadParameter("--improvement-costs requires --independent.")
-    try:
-        sc = load_scenario(graph_file or topology)
-        graph = sc["graph"]
-        target = sc["target"]
-        if graph_file is not None:
-            goal = load_openslo_target(topology, slo_name)
-            if graph.entrypoint != goal.service:
-                raise ValueError(f"set the topology entrypoint to {goal.service!r} (spec.service).")
-            target = (target or SloValues()).model_copy(
-                update={"availability_pct": goal.availability_pct}
-            )
-    except (OSError, ValueError, TypeError, KeyError, yaml.YAMLError) as exc:
-        raise typer.BadParameter(
-            f"Could not load check input: {exc}. See examples/shop.yaml for the topology format."
-        ) from exc
-    overrides = {
-        "availability_pct": slo,
-        "response_time_ms": max_latency_ms,
-        "cost_eur_h": max_cost_eur_h,
-    }
-    overrides = {k: v for k, v in overrides.items() if v is not None}
-    if overrides:
-        target = (target or SloValues()).model_copy(update=overrides)
-
     if independent:
         other_metrics = max_latency_ms is not None or max_cost_eur_h is not None
         if both or paper_version != "v2" or other_metrics:
             raise typer.BadParameter("--independent checks availability only; use it with --slo.")
-        if target is None or target.availability_pct is None:
-            raise typer.BadParameter("Pass --slo or set global_target.availability_pct.")
         try:
-            result = check_availability(graph, target.availability_pct)
+            graph, goal_pct = load_check_input(graph_file or topology)
+            if graph_file is not None:
+                goal_pct = _openslo_availability(topology, slo_name, graph.entrypoint)
+            if slo is not None:
+                goal_pct = slo
+            if goal_pct is None:
+                raise ValueError("Pass --slo or set global_target.availability_pct.")
+            result = check_availability(graph, goal_pct)
             costs = _read_improvement_costs(improvement_costs)
             repairs = suggest_improvements(graph, result, costs)
         except (ValueError, OSError, yaml.YAMLError) as exc:
@@ -395,6 +384,34 @@ def check(
             raise typer.Exit(code=1)
         return
 
+    from slacheck.envelope.faults import evaluate as evaluate_v1
+    from slacheck.envelope.v2.evaluate_v2 import evaluate_v2
+    from slacheck.eval.runner import load_scenario
+    from slacheck.models import SloValues
+
+    try:
+        sc = load_scenario(graph_file or topology)
+        paper_graph = sc["graph"]
+        target = sc["target"]
+        if graph_file is not None:
+            target = (target or SloValues()).model_copy(
+                update={"availability_pct": _openslo_availability(
+                    topology, slo_name, paper_graph.entrypoint,
+                )}
+            )
+    except (OSError, ValueError, TypeError, KeyError, yaml.YAMLError) as exc:
+        raise typer.BadParameter(
+            f"Could not load check input: {exc}. See examples/shop.yaml for the topology format."
+        ) from exc
+    overrides = {
+        "availability_pct": slo,
+        "response_time_ms": max_latency_ms,
+        "cost_eur_h": max_cost_eur_h,
+    }
+    overrides = {k: v for k, v in overrides.items() if v is not None}
+    if overrides:
+        target = (target or SloValues()).model_copy(update=overrides)
+
     if paper_version not in ("v1", "v2"):
         raise typer.BadParameter("Use --paper-version v1 or v2.")
     if target is not None and output_format is OutputFormat.text:
@@ -404,7 +421,7 @@ def check(
     findings = []
     for ver in ["v1", "v2"] if both else [paper_version]:
         if ver == "v1":
-            path = [graph.components[n] for n in graph.topological_order()]
+            path = [paper_graph.components[n] for n in paper_graph.topological_order()]
             verdict = evaluate_v1(path, target)
             if sc["strategies"]:
                 verdict.notes.append(
@@ -413,21 +430,11 @@ def check(
                 )
         else:
             verdict = evaluate_v2(
-                graph, target, sc["kb"], sc["strategies"], sc["target_slos"]
+                paper_graph, target, sc["kb"], sc["strategies"], sc["target_slos"]
             )
-            path = [graph.components[n] for n in verdict.envelope.path]
         if output_format is OutputFormat.text:
             typer.secho(f"\n=== {ver} ===", bold=True)
-            _render(
-                AnalysisResult(
-                    entrypoint=graph.entrypoint,
-                    constraint="availability",
-                    path=path,
-                    verdict=verdict,
-                    dropped_edges=[],
-                    paper_version=ver,  # type: ignore[arg-type]
-                )
-            )
+            _render(verdict, paper_graph.entrypoint, "availability", ver)
         elif output_format is OutputFormat.json:
             reports.append({"model": ver, "feasible": verdict.feasible, **verdict.model_dump()})
         else:
@@ -436,11 +443,18 @@ def check(
                 for fault in verdict.faults
             )
     if output_format is OutputFormat.json:
-        _write_check_json(graph.entrypoint, verdict.feasible, reports)
+        _write_check_json(paper_graph.entrypoint, verdict.feasible, reports)
     elif output_format is OutputFormat.sarif:
         typer.echo(json.dumps(sarif_report(topology, findings), indent=2))
     if not verdict.feasible:
         raise typer.Exit(code=1)
+
+
+def _openslo_availability(path: Path, name: str | None, entrypoint: str) -> float:
+    goal = load_openslo_target(path, name)
+    if entrypoint != goal.service:
+        raise ValueError(f"set the topology entrypoint to {goal.service!r} (spec.service).")
+    return goal.availability_pct
 
 
 def _read_improvement_costs(path: Path | None) -> dict[str, float] | None:
@@ -504,6 +518,8 @@ def import_trace(
     entrypoint: str | None = typer.Option(None, help="Root service of the commitment scope."),
 ) -> None:
     """Write a topology YAML from OTLP, Jaeger, or Tempo service graph data."""
+    from slacheck.graph.trace_import import load_trace_graph
+
     try:
         graph = load_trace_graph(export, source, entrypoint)
     except (OSError, ValueError) as exc:

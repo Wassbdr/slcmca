@@ -8,8 +8,10 @@ import re
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from slacheck.models import Component, DependencyEdge, DependencyGraph, SloValues
+if TYPE_CHECKING:
+    from slacheck.models import DependencyGraph
 
 _REQUESTS = "traces_service_graph_request_total"
 _SAMPLE = re.compile(r'traces_service_graph_request_total\{(.*)\}\s+(\S+)(?:\s.*)?')
@@ -103,6 +105,8 @@ def load_trace_graph(
     path: Path, source: TraceSource, entrypoint: str | None = None,
 ) -> DependencyGraph:
     """Load a trace export as a typed graph without guessing availabilities or redundancy."""
+    from slacheck.models import Component, DependencyEdge, DependencyGraph, SloValues
+
     text = path.read_text(encoding="utf-8")
     try:
         if source is TraceSource.tempo:

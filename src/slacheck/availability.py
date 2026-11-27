@@ -5,10 +5,28 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass
+from graphlib import CycleError, TopologicalSorter
+from typing import TYPE_CHECKING
 
-from slacheck.models import DependencyGraph
+if TYPE_CHECKING:
+    from slacheck.models import DependencyGraph
 
 _NODE_LIMIT = 100_000
+
+
+@dataclass(frozen=True)
+class AvailabilityTopology:
+    entrypoint: str
+    availability: Mapping[str, float | None]
+    edges: list[tuple[str, str, str]]
+
+    @classmethod
+    def from_dependency_graph(cls, graph: DependencyGraph) -> AvailabilityTopology:
+        return cls(
+            graph.entrypoint,
+            {name: comp.slo.availability_pct for name, comp in graph.components.items()},
+            [(e.source, e.target, e.edge_type) for e in graph.edges],
+        )
 
 
 @dataclass(frozen=True)
@@ -29,14 +47,18 @@ class ServiceImprovement:
 
 
 def suggest_improvements(
-    graph: DependencyGraph,
+    graph: DependencyGraph | AvailabilityTopology,
     result: AvailabilityCheck,
     costs_per_point: Mapping[str, float] | None = None,
 ) -> list[ServiceImprovement]:
     """Rank single-service repairs by supplied linear cost, or by percentage-point increase."""
+    topology = (
+        graph if isinstance(graph, AvailabilityTopology)
+        else AvailabilityTopology.from_dependency_graph(graph)
+    )
     if costs_per_point is not None:
         for name, price in costs_per_point.items():
-            if name not in graph.components:
+            if name not in topology.availability:
                 raise ValueError(f"remove unknown service {name!r} from the improvement costs.")
             if isinstance(price, bool) or not isinstance(price, (int, float)) or not (
                 math.isfinite(price) and price >= 0
@@ -49,7 +71,7 @@ def suggest_improvements(
     for name, threshold in result.thresholds_pct.items():
         if threshold is None:
             continue
-        value = graph.components[name].slo.availability_pct
+        value = topology.availability[name]
         current = _percentage(value, f"{name}.availability_pct")
         increase = threshold - current
         if increase <= 0:
@@ -146,7 +168,9 @@ def _percentage(value: float | None, field: str) -> float:
     return value
 
 
-def check_availability(graph: DependencyGraph, target_pct: float) -> AvailabilityCheck:
+def check_availability(
+    graph: DependencyGraph | AvailabilityTopology, target_pct: float,
+) -> AvailabilityCheck:
     """Check entrypoint availability and return exact conditional thresholds.
 
     Distinct services have independent up/down states. Repeated references to
@@ -158,43 +182,62 @@ def check_availability(graph: DependencyGraph, target_pct: float) -> Availabilit
     included. Raises ValueError for invalid inputs or excessive diagram size.
     """
     target_pct = _percentage(target_pct, "the target")
-    if graph.entrypoint not in graph.components:
-        raise ValueError("add an entrypoint service to the topology.")
-    required: dict[str, list[str]] = {name: [] for name in graph.components}
-    fallback: dict[str, list[str]] = {name: [] for name in graph.components}
-    for edge in graph.edges:
-        group = required if edge.edge_type == "conjunctive" else fallback
-        group[edge.source].append(edge.target)
+    topology = (
+        graph if isinstance(graph, AvailabilityTopology)
+        else AvailabilityTopology.from_dependency_graph(graph)
+    )
+    entrypoint = topology.entrypoint
+    if entrypoint not in topology.availability:
+        raise ValueError(f"add entrypoint service {entrypoint!r} to components.")
+    required: dict[str, list[str]] = {name: [] for name in topology.availability}
+    fallback: dict[str, list[str]] = {name: [] for name in topology.availability}
+    order: TopologicalSorter[str] = TopologicalSorter()
+    for name in topology.availability:
+        order.add(name)
+    for a, b, kind in topology.edges:
+        if a not in required or b not in required:
+            unknown = a if a not in required else b
+            raise ValueError(f"declare edge endpoint {unknown!r} in components.")
+        group = required if kind == "conjunctive" else fallback
+        group[a].append(b)
+        order.add(a, b)
+    try:
+        order.prepare()
+    except CycleError as exc:
+        raise ValueError("remove dependency cycles from the topology before checking it.") from exc
 
     index: dict[str, int] = {}
-    pending = [graph.entrypoint]
+    pending = [entrypoint]
     while pending:
         name = pending.pop()
         if name not in index:
             index[name] = len(index)
             pending.extend(reversed(required[name] + fallback[name]))
     downtime = [
-        (100 - _percentage(graph.components[name].slo.availability_pct, f"{name}.availability_pct"))
+        (100 - _percentage(topology.availability[name], f"{name}.availability_pct"))
         / 100
         for name in index
     ]
     diagram = _DecisionDiagram(len(index))
     roots: dict[str, int] = {}
     try:
-        for name in reversed(graph.topological_order()):
-            if name not in index:
-                continue
-            members = [diagram.node(index[name], 0, 1), *(roots[c] for c in required[name])]
-            if fallback[name]:
-                members.append(diagram.group(False, [roots[c] for c in fallback[name]]))
-            roots[name] = diagram.group(True, members)
+        while order.is_active():
+            ready = order.get_ready()
+            for name in ready:
+                if name not in index:
+                    continue
+                members = [diagram.node(index[name], 0, 1), *(roots[c] for c in required[name])]
+                if fallback[name]:
+                    members.append(diagram.group(False, [roots[c] for c in fallback[name]]))
+                roots[name] = diagram.group(True, members)
+            order.done(*ready)
     except RecursionError as exc:
         raise ValueError(
             "availability graph exceeds the decision diagram depth limit; "
             "split it into smaller commitment scopes."
         ) from exc
 
-    failure, slopes = diagram.failure_and_slopes(roots[graph.entrypoint], downtime)
+    failure, slopes = diagram.failure_and_slopes(roots[entrypoint], downtime)
     budget = (100 - target_pct) / 100
     tolerance = 8 * math.ulp(budget) if budget else 0
     thresholds: dict[str, float | None] = {}

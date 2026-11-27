@@ -1,9 +1,36 @@
+import subprocess
+import sys
+from pathlib import Path
+
 import pytest
 from typer.testing import CliRunner
 
 from slacheck.availability import check_availability
 from slacheck.cli import app
 from slacheck.models import Component, DependencyEdge, DependencyGraph, SloValues
+
+
+def test_cli_import_and_exact_check_do_not_load_heavy_dependencies():
+    shop = Path(__file__).resolve().parents[1] / "examples" / "shop.yaml"
+    result = subprocess.run(
+        [sys.executable, "-c", """
+import sys
+from slacheck.cli import app
+
+def check_imports():
+    assert not set(sys.modules) & {
+        'networkx', 'pydantic_settings', 'slacheck.models',
+        'slacheck.pipeline', 'slacheck.datadog.source',
+    }
+
+check_imports()
+assert 'pydantic' not in sys.modules
+app(['check', sys.argv[1], '--independent', '--slo', '99.9'], standalone_mode=False)
+check_imports()
+""", str(shop)],
+        capture_output=True, text=True, check=True,
+    )
+    assert "Feasible" in result.stdout
 
 
 def _graph(values, links):
