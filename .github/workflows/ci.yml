@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install ".[dev]"
+      - run: ruff check .
+      - run: mypy
+      - run: pytest -q
+      - name: Table I totals from the installed CLI
+        run: |
+          slacheck eval --both | tee eval.txt
+          grep -E '^Total +113 +67$' eval.txt
+          grep -E '^Total +113 +113$' eval.txt
+      - name: Example topology flags the payment provider at 99.9%
+        run: |
+          set +e
+          slacheck check examples/shop.yaml --slo 99.9 | tee check.txt
+          test "${PIPESTATUS[0]}" = 1 && grep -q 'payment: availability' check.txt
