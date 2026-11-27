@@ -4,7 +4,7 @@
 
 PY ?= python
 
-.PHONY: help check test lint types eval figures reproduce paper clean-paper
+.PHONY: help check test lint types eval bench figures reproduce paper clean-paper
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -23,6 +23,9 @@ types:  ## mypy type-check
 
 eval:  ## Print Table I (tab:eval) as LaTeX, regenerated from the code
 	$(PY) -m slacheck.cli eval --both --latex
+
+bench:  ## Compare topology checks and reference tools (sloth, pyrra and oslo on PATH)
+	$(PY) -m scripts.bench
 
 reproduce:  ## Reproduce every paper number + figure offline (datasets -> tables -> figures)
 	$(PY) scripts/reproduce_paper.py
