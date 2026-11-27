@@ -1,6 +1,7 @@
 # Availability benchmark
 
-From an environment with `python -m pip install -e .`, put these release binaries on PATH:
+After `python -m pip install -e .`, run `make bench-tools` on Linux x86-64
+to download and verify the pinned releases into `.bench-tools/`:
 
 | Tool | Linux x86-64 release |
 | --- | --- |
@@ -8,8 +9,10 @@ From an environment with `python -m pip install -e .`, put these release binarie
 | Pyrra 0.8.4 | [Linux archive](https://github.com/prometheus-community/pyrra/releases/download/v0.8.4/pyrra_0.8.4_Linux_x86_64.tar.gz) |
 | OpenSLO oslo 0.13.0 | [oslo-0.13.0-linux-amd64](https://github.com/OpenSLO/oslo/releases/download/v0.13.0/oslo-0.13.0-linux-amd64) |
 
-Name the executables `sloth`, `pyrra`, and `oslo`. Run `make bench`. No
-Prometheus server is needed. The command writes [results.md](results.md).
+On another platform, put the corresponding executables `sloth`, `pyrra`,
+and `oslo` on PATH. Run `make bench` to write [results.md](results.md).
+Missing tools are marked as "not installed"; the slacheck and worksheet
+checks still run. No Prometheus server is needed.
 
 - Development: the repository's Alibaba-inspired tree-like generator with
   occasional shared callees, seeds 11, 29 and 47.

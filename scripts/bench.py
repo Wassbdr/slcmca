@@ -19,6 +19,7 @@ from time import perf_counter
 from typing import TypeVar
 
 import yaml
+from scripts.bench_tools import TOOL_DIR
 from scripts.gen_realistic_eval import _build_topology, _sample_size
 
 from slacheck.availability import check_availability
@@ -249,9 +250,13 @@ def timed(fn: Callable[[], T]) -> tuple[T, float]:
     return result, 1000 * (perf_counter() - start)
 
 
-def run_tool(tool: str, root: Path, case: Case, spec: dict) -> tuple[Result, float]:
+def find_tool(tool: str) -> str | None:
+    return shutil.which(str(TOOL_DIR / tool)) or shutil.which(tool)
+
+
+def run_tool(tool: str, executable: str, root: Path, case: Case) -> tuple[Result, float]:
     path = root / f"{tool}-{case.name}.yaml"
-    path.write_text(yaml.safe_dump(spec))
+    path.write_text(yaml.safe_dump(documents(case)[tool]))
     out = root / "rules"
     output = out / path.name
     commands = {
@@ -262,7 +267,7 @@ def run_tool(tool: str, root: Path, case: Case, spec: dict) -> tuple[Result, flo
     if tool == "pyrra":
         output.unlink(missing_ok=True)
     run, ms = timed(lambda: subprocess.run(
-        [tool, *commands[tool]], capture_output=True, text=True, timeout=30, check=False,
+        [executable, *commands[tool]], capture_output=True, text=True, timeout=30, check=False,
     ))
     if run.returncode or (tool == "pyrra" and not output.is_file()):
         raise SystemExit(f"{tool} failed on {case.name}:\n{run.stdout}{run.stderr}")
@@ -296,9 +301,6 @@ def cpu_model() -> str:
 
 
 def main() -> None:
-    missing = [name for name in ("sloth", "pyrra", "oslo") if not shutil.which(name)]
-    if missing:
-        raise SystemExit(f"Install {', '.join(missing)}; see benchmarks/README.md.")
     series = [
         case for split, seeds in SEEDS.items() for seed in seeds for case in cases(split, seed)
     ]
@@ -310,6 +312,7 @@ def main() -> None:
         "Hand error budget": worksheet,
     }
     tools = {"Sloth": "sloth", "Pyrra": "pyrra", "OpenSLO": "oslo"}
+    missing = set()
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
         (root / "rules").mkdir()
@@ -322,11 +325,16 @@ def main() -> None:
             [cli_time(root, case, independent(case)) for _ in range(7)] for case in big
         ]
         for name, tool in tools.items():
+            executable = find_tool(tool)
+            if executable is None:
+                missing.add(name)
+                print(f"{name} ({tool}): not installed", file=sys.stderr)
+                continue
             predictions[name] = [
-                run_tool(tool, root, case, documents(case)[tool])[0] for case in series
+                run_tool(tool, executable, root, case)[0] for case in series
             ]
             timings[name] = [
-                [run_tool(tool, root, case, documents(case)[tool])[1] for _ in range(7)]
+                [run_tool(tool, executable, root, case)[1] for _ in range(7)]
                 for case in big
             ]
 
@@ -355,6 +363,9 @@ def main() -> None:
             precision = f"{tp}/{tp + fp}" if tp + fp else "n/a"
             thresholds = f"{matched}/{total}" if total else "not computed"
             lines.append(f"| {name} | {tp}/{positives} | {precision} | {fp} | {thresholds} |")
+        for name in tools:
+            if name in missing:
+                lines.append(f"| {name} | not installed | | | |")
         lines.append("")
         for name in methods:
             misses = [
@@ -378,6 +389,9 @@ def main() -> None:
     for name, samples in timings.items():
         formatted = [f"{statistics.median(values):.2f} / {max(values):.2f}" for values in samples]
         lines.append(f"| {name} | {' | '.join(formatted)} |")
+    for name in tools:
+        if name in missing:
+            lines.append(f"| {name} | not installed | not installed |")
     baseline = score(truth, predictions["slacheck v2"])
     current = score(truth, predictions["slacheck independent"])
     positives = sum(item.infeasible for item in truth)
