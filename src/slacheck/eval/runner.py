@@ -86,7 +86,7 @@ def _detect(scenario: dict, paper_version: PaperVersion) -> bool:
     """Run the engine and report whether the SPECIFIC injected fault was detected.
 
     Matches on the expected ``metric`` and, when given, the exact ``component`` and
-    ``direction`` — so a fault on a different component (or direction) does NOT count as a
+    ``direction``: so a fault on a different component (or direction) does NOT count as a
     detection. This is what makes the v1 57/60 vs v2 60/60 result meaningful.
     """
     exp = scenario["expected"]
@@ -155,8 +155,8 @@ def format_latex(v1: EvalReport, v2: EvalReport) -> str:
     """Render the paper's Table I (``tab:eval``) from live detection counts.
 
     The code is the single source of truth for this table: the output is meant to be pasted
-    verbatim into ``issre_paper.tex``. It therefore matches the paper's framing exactly —
-    columns are the ablated **Baseline** (v1) and the **Full** method (v2), not "v1/v2" — and
+    verbatim into ``issre_paper.tex``. It therefore matches the paper's framing exactly :
+    columns are the ablated **Baseline** (v1) and the **Full** method (v2), not "v1/v2": and
     includes the injected/detected **Total** row. Regenerate with ``slacheck eval --both --latex``.
     """
     rows = []

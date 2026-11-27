@@ -24,7 +24,7 @@ CompareOp = Literal["gt", "lt", "ge", "le"]
 class SloValues(BaseModel):
     """One component's measured Sub-SLO, or a target Global-SLO (paper §II).
 
-    ``cost_eur_h`` is ``None`` when no cost source is available — Datadog does not
+    ``cost_eur_h`` is ``None`` when no cost source is available: Datadog does not
     expose per-microservice cost (see docs/datadog_api_catalog.md §5).
     """
 
@@ -97,7 +97,7 @@ class Component(BaseModel):
 class Envelope(BaseModel):
     """The guaranteeable envelope (ascending aggregation result, paper §III-B).
 
-    Values are achievable *over the series critical path* — not the whole DAG.
+    Values are achievable *over the series critical path*: not the whole DAG.
     ``cost_eur_h`` is ``None`` when cost data is unavailable.
     """
 
@@ -146,7 +146,7 @@ class DependencyGraph(BaseModel):
                     f"node {target!r} has mixed incoming edge types {sorted(types)}; "
                     "a fan-in group must be all conjunctive or all disjunctive"
                 )
-        # 4) acyclicity — validated eagerly so traversals can't infinite-loop later.
+        # 4) acyclicity: validated eagerly so traversals can't infinite-loop later.
         if self.components:
             self.topological_order()  # raises ValueError on a cycle
 

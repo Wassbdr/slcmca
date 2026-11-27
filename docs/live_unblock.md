@@ -1,11 +1,11 @@
 # Running the live Datadog path against another org
 
 The full live loop has been exercised end-to-end on our deployment (topology discovery, live trace
-latencies, envelope computation, dashboard publication — see `fixtures/datadog_live/README.md`).
+latencies, envelope computation, dashboard publication: see `fixtures/datadog_live/README.md`).
 The paper's reproducible case-study numbers still come from the **declared** train-ticket topology
 with fixture metrics, because live per-service latency is only as good as the traffic that feeds it
 (paper §IV, lesson L3). This file is the runbook for pointing the live path at a **different**
-Datadog org — e.g. to replicate the loop on your own cluster.
+Datadog org: e.g. to replicate the loop on your own cluster.
 
 ## 1. Datadog scopes
 
@@ -21,9 +21,9 @@ See `docs/datadog_api_catalog.md` → "Access checklist" for the exact scope nam
 
 ## 2. Generate real traffic (so APM sees edges and latency aggregates)
 
-The agent only emits spans for serviced requests; with no traffic the service map is empty and
+The tracer emits spans only for serviced requests. With no traffic the service map is empty and
 `trace.servlet.request` (the real Java/Spring trace metric, in **seconds** → converted to ms in
-`datadog/live_client.py`) never aggregates. Drive sustained load (paper §IV, lesson L1 — the
+`datadog/live_client.py`) never aggregates. Drive sustained load (paper §IV, lesson L1: the
 default head-based trace sampling needs both volume and, if necessary, a forced sample rate; see
 `scripts/loadgen/`):
 

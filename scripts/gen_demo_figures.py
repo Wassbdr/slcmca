@@ -1,5 +1,5 @@
 """Generate demo figures: the full dependency graph, and the subgraph slacheck extracts for a
-given user constraint. Everything is REAL — the highlighted path is the actual critical path
+given user constraint. Everything is REAL: the highlighted path is the actual critical path
 returned by the pipeline (scripts don't hand-draw it).
 
 Produces under figures/demo/:
@@ -85,7 +85,7 @@ def fig_full(g: nx.DiGraph, pos) -> None:
         ax.annotate(_short(n), pos[n], fontsize=7, fontweight="bold", ha="center",
                     xytext=(0, 10), textcoords="offset points",
                     bbox=dict(boxstyle="round,pad=0.12", fc="white", ec="#aaa", lw=0.3, alpha=0.9))
-    ax.set_title(f"Discovered topology — {g.number_of_nodes()} services, "
+    ax.set_title(f"Discovered topology: {g.number_of_nodes()} services, "
                  f"{g.number_of_edges()} dependencies", fontsize=9)
     ax.text(0, -0.03, f"entrypoint = {_short(ENTRY)} (dark); node size = in-degree centrality",
             transform=ax.transAxes, fontsize=7, color="#555")
@@ -118,7 +118,7 @@ def fig_path(g: nx.DiGraph, pos, constraint: str, envelope_note: str) -> None:
         ax.annotate(_short(n), pos[n], fontsize=7.5, fontweight="bold", ha="center",
                     xytext=(0, 11), textcoords="offset points",
                     bbox=dict(boxstyle="round,pad=0.13", fc="white", ec=C_PATH, lw=0.5))
-    ax.set_title(f"Extracted critical path — constraint: {constraint}", fontsize=9)
+    ax.set_title(f"Extracted critical path: constraint: {constraint}", fontsize=9)
     chain = "  →  ".join(_short(n) for n in path)
     ax.text(0, -0.03, f"{chain}\n{envelope_note}", transform=ax.transAxes,
             fontsize=7.5, color=C_PATH)

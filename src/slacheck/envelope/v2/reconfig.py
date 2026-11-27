@@ -3,7 +3,7 @@
 SLOs are high-level (e.g. throughput); elasticity triggers are low-level operational
 parameters (e.g. CPU%). A knowledge base translates the SLO into the operational predicate
 that must hold to sustain it (e.g. cpu_pct ≤ 80). A strategy is faulty when a transition's
-trigger CONTRADICTS the parameter required to maintain the SLO — which depends on the
+trigger CONTRADICTS the parameter required to maintain the SLO: which depends on the
 action's direction:
 
 - ``scale_up`` adds capacity → lowers the metric (protective). It is faulty only when it
@@ -56,7 +56,7 @@ def _trigger_can_fire_in_violating_region(
     """Does the trigger's satisfied region intersect the SLO-violating region?
 
     Sampling around both thresholds is exact for the monotone half-line predicates used
-    here (gt/ge/lt/le); a scaled epsilon keeps it robust across metric magnitudes.
+    here (gt/ge/lt/le), with a tolerance scaled to the metric magnitude.
     """
     eps = max(abs(trig_val), abs(req_val), 1.0) * 1e-9
     probes = (

@@ -1,7 +1,7 @@
 """Paper-v2 entry point: typed-DAG envelope + margins + weighted decomposition + reconfig.
 
 Chains the v2 pieces and reuses the v1 fault detectors (``detect_ascending`` /
-``detect_descending`` are version-agnostic — they operate on Envelope/Threshold/Component).
+``detect_descending`` are version-agnostic: they operate on Envelope/Threshold/Component).
 Crucially, the ascending check compares the target against the margin-adjusted A_commit,
 not the raw theoretical envelope A*.
 """

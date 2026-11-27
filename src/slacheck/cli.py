@@ -97,7 +97,7 @@ def _render(result: AnalysisResult) -> None:
         for f in v.faults:
             typer.secho(f"  [{f.direction}/{f.metric}] {f.message}", fg=typer.colors.RED)
     else:
-        typer.secho("\nNo over-commitment faults. ✅", fg=typer.colors.GREEN)
+        typer.secho("\nNo over-commitment faults.", fg=typer.colors.GREEN)
 
     if v.notes:
         typer.echo("\nNotes:")
@@ -226,7 +226,7 @@ def record(
     for name, fetch in captures.items():
         try:
             payload = fetch()
-        except Exception as exc:  # noqa: BLE001 — record-what-you-can, report the rest
+        except Exception as exc:  # noqa: BLE001
             failed += 1
             reason = str(exc).splitlines()[0]
             typer.secho(f"SKIP {name}: {type(exc).__name__}: {reason}", fg=typer.colors.YELLOW)
@@ -238,7 +238,7 @@ def record(
     typer.echo(f"\nCaptured {ok}/{ok + failed} endpoints.")
     if failed:
         typer.secho(
-            "Some endpoints were denied — grant the app key the scopes in "
+            "Some endpoints were denied: grant the app key the scopes in "
             "docs/datadog_api_catalog.md ('Access checklist') and re-run.",
             fg=typer.colors.YELLOW,
         )
@@ -267,7 +267,7 @@ def doctor() -> None:
 
     try:
         ok = LiveClient(settings).validate()
-    except Exception as exc:  # noqa: BLE001 — surface the API error to the user
+    except Exception as exc:  # noqa: BLE001
         typer.secho(f"Validation call failed: {exc}", fg=typer.colors.RED)
         typer.secho(
             "If this is a 403, confirm DD_SITE (EU vs US) and the app key scopes.",
@@ -276,9 +276,9 @@ def doctor() -> None:
         raise typer.Exit(code=1) from exc
 
     if ok:
-        typer.secho("Credentials valid for this site. ✅", fg=typer.colors.GREEN)
+        typer.secho("Credentials valid for this site.", fg=typer.colors.GREEN)
     else:
-        typer.secho("API key rejected for this site — check DD_SITE.", fg=typer.colors.RED)
+        typer.secho("API key rejected for this site: check DD_SITE.", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
 
@@ -520,7 +520,7 @@ def import_trace(
 @app.command()
 def catalog() -> None:
     """Where to read what Datadog exposes for slacheck."""
-    typer.echo("See docs/datadog_api_catalog.md — endpoints, metric→SLO conversions, and gaps.")
+    typer.echo("See docs/datadog_api_catalog.md: endpoints, metric→SLO conversions, and gaps.")
 
 
 if __name__ == "__main__":

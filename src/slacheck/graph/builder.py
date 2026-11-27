@@ -71,7 +71,7 @@ def build_graph(
 def _break_cycles(g: nx.DiGraph, entrypoint: str | None) -> list[tuple[str, str]]:
     """Make ``g`` a DAG by removing back-edges, preferring those rooted at ``entrypoint``.
 
-    A back-edge points to a node already on the current DFS stack — removing it breaks the
+    A back-edge points to a node already on the current DFS stack: removing it breaks the
     cycle without severing any *forward* path. Rooting the DFS at the entrypoint guarantees
     the service we actually care about keeps all its downstream reachability. Edges are
     visited in descending request-volume order so the lowest-volume back-edge is the one

@@ -1,7 +1,7 @@
 """Project the impure nx.DiGraph into the pure typed DependencyGraph (paper-v2).
 
 Datadog APM call edges carry no AND/OR semantics, so every edge defaults to
-**conjunctive** (a caller fanning out to N callees needs all of them — the common
+**conjunctive** (a caller fanning out to N callees needs all of them: the common
 micro-service reality). Redundant provider groups are marked disjunctive via an optional
 ``edge_overrides`` mapping (see fixtures/scenarios/edge_overrides.example.yaml), mirroring
 the cost_overrides pattern.
@@ -29,7 +29,7 @@ def project_to_dependency_graph(
     if g.number_of_nodes() == 0:
         raise ValueError(
             "no services found in the topology (empty graph). If using --source live, the "
-            "APM service map is empty or unreachable — run `slacheck doctor` to check access."
+            "APM service map is empty or unreachable: run `slacheck doctor` to check access."
         )
 
     overrides = edge_overrides or {}
@@ -71,15 +71,3 @@ def project_to_dependency_graph(
             )
 
     return DependencyGraph(components=components, edges=edges, entrypoint=entrypoint)
-
-
-def infer_edge_types_from_traces(*_args, **_kwargs) -> dict:
-    """Future hook: derive disjunctive groups from APM trace spans (retry/failover/replica
-    siblings). Returns an edge_overrides-shaped dict.
-
-    Not implemented — the service-dependencies endpoint exposes aggregated edges, not the
-    span-level detail this inference needs. Use explicit edge_overrides meanwhile.
-    """
-    raise NotImplementedError(
-        "trace-based edge-type inference not implemented; use edge_overrides.yaml"
-    )

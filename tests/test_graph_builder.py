@@ -36,7 +36,7 @@ def test_graph_is_dag_after_breaking_cycle(built):
 
 def test_forward_reachability_preserved(built):
     g, _ = built
-    # route must remain reachable (the worst-availability node) — not severed by cycle-breaking
+    # route must remain reachable (the worst-availability node): not severed by cycle-breaking
     assert nx.has_path(g, "ts-gateway-service", "ts-route-service")
 
 

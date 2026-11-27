@@ -1,8 +1,8 @@
-"""Reproduce every empirical number and figure in issre_paper.tex — offline, no credentials.
+"""Reproduce every empirical number and figure in issre_paper.tex: offline, no credentials.
 
 This is the "one button" the paper promises: each headline number is the output of a script, and
 this driver runs them in dependency order and echoes what the paper claims next to what the code
-produces. Nothing here recomputes the numbers itself — it orchestrates the existing scripts and
+produces. Nothing here recomputes the numbers itself: it orchestrates the existing scripts and
 `slacheck eval` so there is a single command a reviewer can run:
 
     python scripts/reproduce_paper.py            # everything (datasets → tables → figures)
@@ -57,53 +57,53 @@ def main() -> None:
         "Alibaba-like topologies, fixed seed; window/sweep/indep variants.",
     )
 
-    # 2. Table I — the code is the source of truth for tab:eval (Baseline/Full + Total).
+    # 2. Table I: the code is the source of truth for tab:eval (Baseline/Full + Total).
     _run(
-        "Table I — fault detection (slacheck eval --both --latex)",
+        "Table I: fault detection (slacheck eval --both --latex)",
         [PY, "-m", "slacheck.cli", "eval", "--both", "--latex"],
         "Baseline 10/57/0 = 67, Full 10/60/43 = 113. Regenerates tab:eval verbatim.",
     )
 
-    # 3. §V-B — real systems.
+    # 3. §V-B: real systems.
     _run(
-        "§V-B case study — train-ticket (38 services)",
+        "§V-B case study: train-ticket (38 services)",
         script("case_study.py"),
         "avail. envelope: baseline 99.40% (3 faults) vs full 98.36% (6); latency false-negative.",
     )
     _run(
-        "§V-B second system — Online Boutique",
+        "§V-B second system: Online Boutique",
         script("multi_system_study.py"),
         "structural coverage on a second real call graph (tab:realsystems).",
     )
 
-    # 4. §V-C — statistical validation + the two honesty checks.
+    # 4. §V-C: statistical validation + the two honesty checks.
     _run(
-        "§V-C headline — realistic population, Wilson CIs",
+        "§V-C headline: realistic population, Wilson CIs",
         script("realistic_study.py"),
         "weighted (full) 89.5% [84.5, 93.0] vs uniform (baseline) 4.0% [2.0, 7.7].",
     )
     _run(
-        "§V-C honesty — position sweep (defuses the tautology critique)",
+        "§V-C honesty: position sweep (defuses the tautology critique)",
         script("sweep_study.py"),
-        "detection tracks the fault crossing both thresholds — a genuine threshold effect.",
+        "detection tracks the fault crossing both thresholds: a genuine threshold effect.",
     )
     _run(
-        "§V-C honesty — independent-distribution draw",
+        "§V-C honesty: independent-distribution draw",
         script("indep_study.py"),
         "full still strictly dominates baseline when faults are drawn off both thresholds.",
     )
     _run(
-        "§III-B — safety-margin sensitivity (gamma sweep)",
+        "§III-B: safety-margin sensitivity (gamma sweep)",
         script("gamma_study.py"),
         "A_commit tightens as the confidence factor k grows (running case).",
     )
 
-    # 5. Figures — rendered from the same code paths as the tables (no hardcoded numbers).
+    # 5. Figures: rendered from the same code paths as the tables (no hardcoded numbers).
     if args.fast:
         print("\n(skipping figure rendering: --fast)")
     else:
         _run(
-            "Figures — regenerate figures/*.pdf",
+            "Figures: regenerate figures/*.pdf",
             script("gen_figures.py"),
             "detection_by_category, detection_realistic, train_ticket_dag, "
             "detection_sweep, gamma_sensitivity.",

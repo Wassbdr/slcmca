@@ -1,5 +1,5 @@
 {
-  "_comment": "Shape of GET /api/v1/slo (list_slos). Reference only — slacheck computes its own envelope; existing SLOs are shown for comparison.",
+  "_comment": "Shape of GET /api/v1/slo (list_slos). Reference only: slacheck computes its own envelope; existing SLOs are shown for comparison.",
   "data": [
     {
       "id": "abc123",

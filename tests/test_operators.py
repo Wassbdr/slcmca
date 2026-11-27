@@ -1,4 +1,4 @@
-"""The paper's worked-example numbers — the load-bearing regression contract (§III-B, §IV)."""
+"""The paper's worked-example numbers: the load-bearing regression contract (§III-B, §IV)."""
 
 import pytest
 

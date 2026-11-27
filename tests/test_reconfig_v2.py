@@ -1,7 +1,7 @@
 """Reconfiguration sustainability (paper §III-D), action-direction aware.
 
 A transition is faulty when its trigger contradicts the parameter required to MAINTAIN the
-SLO — not merely when it fires in a non-allowed region. A protective scale-up reacting to
+SLO: not merely when it fires in a non-allowed region. A protective scale-up reacting to
 high load is correct; a scale-down that can fire near/above the bound is dangerous.
 """
 

@@ -1,5 +1,5 @@
 """Paper-v2 envelope engine: typed-DAG aggregation, safety margins, weighted decomposition,
-reconfiguration faults. Pure — imports only ``slacheck.models`` and stdlib (no networkx/Datadog)."""
+reconfiguration faults. Pure: imports only ``slacheck.models`` and stdlib (no networkx/Datadog)."""
 
 from slacheck.envelope.v2.aggregate_v2 import compute_commit_envelope_v2, compute_envelope_v2
 from slacheck.envelope.v2.decompose_v2 import decompose_v2, structural_weights

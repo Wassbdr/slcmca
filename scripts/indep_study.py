@@ -6,7 +6,7 @@ victim cost from a log-normal perturbation around the uniform threshold (mode="i
 gen_realistic_eval.py), independent of the [weighted, uniform] window, keeping only scenarios where
 a genuine over-commitment exists. It then reports each method's detection rate.
 
-This rate is lower than the windowed headline by construction — and that is the point: it is an
+This rate is lower than the windowed headline by construction: and that is the point: it is an
 honest, non-constructed measurement of how the two decompositions compare when the fault location
 is not chosen to favour either one. Weighted still dominates because its threshold is never looser
 than uniform, but the gap reflects the natural fault distribution rather than the discriminating

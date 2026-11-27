@@ -36,7 +36,7 @@ knowledge_base:
     - { slo_metric: throughput, operational_metric: cpu_pct, operational_op: le, operational_value: 80.0 }
 
 # A faulty strategy: it triggers a scale-DOWN at cpu<85, which can fire while cpu is already
-# above the SLO bound (cpu<=80) — removing capacity then drives cpu further past 80.
+# above the SLO bound (cpu<=80): removing capacity then drives cpu further past 80.
 reconfig_strategies:
   - name: autoscale-stor
     component: Stor

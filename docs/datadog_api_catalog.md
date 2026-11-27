@@ -1,4 +1,4 @@
-# Datadog API catalog — what slacheck reads and writes
+# Datadog API catalog: what slacheck reads and writes
 
 Reference for how slacheck maps the paper's inputs to real Datadog endpoints: which calls build the
 topology graph, which produce per-service SLO values, where the gaps are, and how the verdict
@@ -14,14 +14,14 @@ The full loop runs live against a real train-ticket deployment: automatic topolo
 (38 `ts-*` services, ~58 edges), per-service p99 latency, the typed-DAG envelope, and dashboard
 publication via `slacheck publish --source live`. Notes worth keeping:
 
-- **APM auth.** The SDK's low-level `call_api` does not attach Datadog auth headers — auth is applied
+- **APM auth.** The SDK's low-level `call_api` does not attach Datadog auth headers: auth is applied
   inside the generated API methods. Raw calls to the service-dependencies endpoint must pass
   `DD-API-KEY` / `DD-APPLICATION-KEY` explicitly (handled in
   `live_client._service_dependencies_apm`). An early "401 on APM" turned out to be this, not a
   missing scope.
 - **Latency metric.** For this Java/Spring app the trace stat is `trace.servlet.request` (its
   duration is the base metric), not `trace.http.request.duration`, and Datadog returns p99 in
-  **seconds** — converted to ms at the live edge only (fixtures are already in ms).
+  **seconds**: converted to ms at the live edge only (fixtures are already in ms).
 - **Why the paper uses declared topology.** APM only records edges exercised during the observation
   window, and several heavy endpoints time out under load, so live per-service metrics are noisy. The
   reproducible case-study numbers therefore come from the declared topology
@@ -44,10 +44,10 @@ The application key carries the permissions; request the scopes matching the fea
 | `monitors_read` | existing monitors (context only) |
 | `dashboards_read`, `dashboards_write` | publish the verdict dashboard |
 
-The target app must actually emit APM traces — the service map is built from traces, so no traces
+The target app must actually emit APM traces: the service map is built from traces, so no traces
 means no topology.
 
-## 1. Topology — service dependency graph
+## 1. Topology: service dependency graph
 
 Graph nodes and edges come from APM. This replaces the paper's hand-written YAML.
 
@@ -70,10 +70,10 @@ Graph nodes and edges come from APM. This replaces the paper's hand-written YAML
 ### 1b. Software catalog (optional enrichment)
 
 - SDK v2: `SoftwareCatalogApi.list_catalog_entities()` / `ServiceDefinitionApi.list_service_definitions()`.
-- Gives declared `dependsOn`, ownership, tier, links — used to enrich or validate the runtime map
+- Gives declared `dependsOn`, ownership, tier, links: used to enrich or validate the runtime map
   when traces are sparse, not as the source of truth for the live graph.
 
-## 2. Metrics — per-service SLO values
+## 2. Metrics: per-service SLO values
 
 Per service, over a window, via timeseries query. These produce the `SloValues` the paper needs.
 
@@ -90,14 +90,14 @@ The exact namespace depends on the app's instrumentation (`trace.http.request.*`
 `trace.servlet.request.*`, or OTel `trace.*`); `slacheck record` dumps a sample timeseries so the
 real metric names can be confirmed before wiring `datadog/metrics.py`.
 
-Availability here is `(1 - errors/requests) * 100` — a request-success proxy, not true uptime. This
+Availability here is `(1 - errors/requests) * 100`: a request-success proxy, not true uptime. This
 is surfaced in the verdict and the dashboard note.
 
 ## 3. Existing SLOs and monitors (reference only)
 
-- SLOs (v1): `ServiceLevelObjectivesApi.list_slos()` (GET `/api/v1/slo`) — lets slacheck compare its
+- SLOs (v1): `ServiceLevelObjectivesApi.list_slos()` (GET `/api/v1/slo`): lets slacheck compare its
   computed envelope against SLOs the team already declared.
-- Monitors (v1): `MonitorsApi.list_monitors()` (GET `/api/v1/monitor`) — context on what is alerting;
+- Monitors (v1): `MonitorsApi.list_monitors()` (GET `/api/v1/monitor`): context on what is alerting;
   not used in the envelope math.
 
 ## 4. Kubernetes resources
@@ -117,7 +117,7 @@ Wired via `live_client.k8s_metric_series` / `metrics.collect_k8s_metrics` into `
 (`ResourceMetrics`), shown in the dashboard's "Resource Health (k8s)" group. These also feed the
 operational translation (paper §III-D: throughput SLO → CPU > 80% trigger).
 
-## 5. Cost — the gap and two stand-ins
+## 5. Cost: the gap and two stand-ins
 
 Datadog does not expose per-microservice cost. Cloud Cost Management (`cloud_cost_management_api.*`)
 returns the cloud bill by account/tag, not a per-service EUR/h, and mapping a bill line to a service
@@ -127,7 +127,7 @@ is not something the API provides. slacheck never fabricates a cost:
   `kubernetes.memory.requests` (bytes) flow live, so slacheck estimates
   `cost_eur_h ≈ cpu_cores·cpu_eur_per_core_h + mem_gb·mem_eur_per_gb_h` from a `pricing.yaml`
   (`models.Pricing`, `metrics.k8s_cost_model`, `--pricing`). A reservation estimate, not a bill, but
-  live and per-service — symmetric to the availability readiness proxy.
+  live and per-service: symmetric to the availability readiness proxy.
 - **Declared overrides (exact).** `cost_overrides.yaml` (per-service EUR/h, hand-supplied like the
   paper's YAML) takes precedence when present.
 
@@ -150,5 +150,5 @@ the source (e.g. `cost_source: k8s_resource_model`).
 | response time per service | p99 trace duration (§2) | yes |
 | availability per service | error/hit counts (§2) | yes (success proxy, not uptime) |
 | request rate | trace hits as_rate (§2) | yes |
-| per-service cost | — | no direct source (§5 stand-ins) |
+| per-service cost |: | no direct source (§5 stand-ins) |
 | publish dashboard | Dashboards API (§6) | yes (needs `dashboards_write`) |
