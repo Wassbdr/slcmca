@@ -24,11 +24,11 @@ jobs:
           slacheck eval --both | tee eval.txt
           grep -E '^Total +113 +67$' eval.txt
           grep -E '^Total +113 +113$' eval.txt
-      - name: Example topology flags the payment provider at 99.9%
+      - name: Example topology fails the exact availability check at 99.94%
         run: |
           set +e
-          slacheck check examples/shop.yaml --slo 99.9 | tee check.txt
-          test "${PIPESTATUS[0]}" = 1 && grep -q 'payment: availability' check.txt
+          slacheck check examples/shop.yaml --slo 99.94 | tee check.txt
+          test "${PIPESTATUS[0]}" = 1 && grep -q '1\. payment:' check.txt
 
   docs-and-action:
     runs-on: ubuntu-latest
