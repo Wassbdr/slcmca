@@ -21,6 +21,7 @@ from slacheck.availability import check_availability
 from slacheck.config import Settings
 from slacheck.datadog.source import get_source
 from slacheck.models import SloValues
+from slacheck.openslo import load_openslo_target
 from slacheck.pipeline import AnalysisResult, analyze
 
 app = typer.Typer(add_completion=False, help="Achievable SLA envelope from Datadog topology.")
@@ -304,7 +305,9 @@ def eval_cmd(
 
 @app.command()
 def check(
-    topology: Path = typer.Argument(..., exists=True, dir_okay=False, help="Topology YAML."),
+    topology: Path = typer.Argument(
+        ..., exists=True, dir_okay=False, help="Topology or OpenSLO YAML."
+    ),
     slo: float | None = typer.Option(None, "--slo", help="Target availability (%), e.g. 99.9."),
     max_latency_ms: float | None = typer.Option(None, help="Target max end-to-end latency (ms)."),
     max_cost_eur_h: float | None = typer.Option(None, help="Target max cost (EUR/h)."),
@@ -313,25 +316,42 @@ def check(
     independent: bool = typer.Option(
         False, "--independent", help="Check only availability using independent service states."
     ),
+    graph_file: Path | None = typer.Option(
+        None, "--graph", exists=True, dir_okay=False, help="Topology YAML for an OpenSLO input."
+    ),
+    slo_name: str | None = typer.Option(None, help="Select an SLO in an OpenSLO bundle."),
 ) -> None:
-    """Check a self-contained topology YAML (components, edges, SLOs) against a target.
+    """Check a declared topology, or an OpenSLO availability target with --graph.
 
-    The file uses the scenario format of fixtures/eval (see examples/shop.yaml). Command-line
-    targets override the file's ``global_target``. Exits 1 when the last engine run finds a fault.
+    Command-line targets override targets in the input. Exits 1 when the last check finds a fault.
     """
     from slacheck.envelope.faults import evaluate as evaluate_v1
     from slacheck.envelope.v2.evaluate_v2 import evaluate_v2
     from slacheck.eval.runner import load_scenario
 
-    sc = load_scenario(topology)
-    graph = sc["graph"]
+    if slo_name is not None and graph_file is None:
+        raise typer.BadParameter("--slo-name requires OpenSLO YAML with --graph.")
+    try:
+        sc = load_scenario(graph_file or topology)
+        graph = sc["graph"]
+        target = sc["target"]
+        if graph_file is not None:
+            goal = load_openslo_target(topology, slo_name)
+            if graph.entrypoint != goal.service:
+                raise ValueError(f"set the topology entrypoint to {goal.service!r} (spec.service).")
+            target = (target or SloValues()).model_copy(
+                update={"availability_pct": goal.availability_pct}
+            )
+    except (OSError, ValueError, TypeError, KeyError, yaml.YAMLError) as exc:
+        raise typer.BadParameter(
+            f"Could not load check input: {exc}. See examples/shop.yaml for the topology format."
+        ) from exc
     overrides = {
         "availability_pct": slo,
         "response_time_ms": max_latency_ms,
         "cost_eur_h": max_cost_eur_h,
     }
     overrides = {k: v for k, v in overrides.items() if v is not None}
-    target = sc["target"]
     if overrides:
         target = (target or SloValues()).model_copy(update=overrides)
 
