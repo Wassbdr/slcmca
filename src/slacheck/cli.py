@@ -12,12 +12,19 @@ Commands:
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 import typer
 import yaml
 
-from slacheck.availability import check_availability
+from slacheck.availability import (
+    AvailabilityCheck,
+    ServiceImprovement,
+    check_availability,
+    suggest_improvements,
+)
+from slacheck.check_output import Finding, OutputFormat, sarif_report
 from slacheck.config import Settings
 from slacheck.datadog.source import get_source
 from slacheck.graph.trace_import import TraceSource, load_trace_graph
@@ -321,6 +328,10 @@ def check(
         None, "--graph", exists=True, dir_okay=False, help="Topology YAML for an OpenSLO input."
     ),
     slo_name: str | None = typer.Option(None, help="Select an SLO in an OpenSLO bundle."),
+    output_format: OutputFormat = typer.Option(OutputFormat.text, "--format", help="Report type."),
+    improvement_costs: Path | None = typer.Option(
+        None, exists=True, dir_okay=False, help="YAML mapping of service to cost per point."
+    ),
 ) -> None:
     """Check a declared topology, or an OpenSLO availability target with --graph.
 
@@ -332,6 +343,8 @@ def check(
 
     if slo_name is not None and graph_file is None:
         raise typer.BadParameter("--slo-name requires OpenSLO YAML with --graph.")
+    if improvement_costs is not None and not independent:
+        raise typer.BadParameter("--improvement-costs requires --independent.")
     try:
         sc = load_scenario(graph_file or topology)
         graph = sc["graph"]
@@ -364,28 +377,31 @@ def check(
             raise typer.BadParameter("Pass --slo or set global_target.availability_pct.")
         try:
             result = check_availability(graph, target.availability_pct)
-        except ValueError as exc:
+            costs = _read_improvement_costs(improvement_costs)
+            repairs = suggest_improvements(graph, result, costs)
+        except (ValueError, OSError, yaml.YAMLError) as exc:
             raise typer.BadParameter(str(exc)) from exc
-        typer.echo("Model: independent service states; declared availabilities without margins.")
-        typer.echo(f"Target: {result.target_pct:.12g}%")
-        typer.echo(f"Achievable: {result.achievable_pct:.12g}%")
-        typer.echo("Minimum availability with all other services unchanged:")
-        for name, threshold in result.thresholds_pct.items():
-            value = (
-                "not repairable by this service alone"
-                if threshold is None
-                else f"{threshold:.12g}%"
-            )
-            typer.echo(f"  {name}: {value}")
-        typer.echo("Feasible" if result.feasible else "Infeasible")
+        if output_format is OutputFormat.text:
+            _render_independent_check(result, repairs)
+        elif output_format is OutputFormat.json:
+            report = {"model": "independent", **asdict(result), "improvements": [
+                asdict(repair) for repair in repairs
+            ]}
+            _write_check_json(graph.entrypoint, result.feasible, [report])
+        else:
+            findings = [] if result.feasible else [_availability_finding(result, repairs)]
+            typer.echo(json.dumps(sarif_report(topology, findings), indent=2))
         if not result.feasible:
             raise typer.Exit(code=1)
         return
 
-    if target is not None:
+    if paper_version not in ("v1", "v2"):
+        raise typer.BadParameter("Use --paper-version v1 or v2.")
+    if target is not None and output_format is OutputFormat.text:
         typer.echo(f"Target Global-SLO : {target.model_dump(exclude_none=True)}")
 
-    verdict = None
+    reports = []
+    findings = []
     for ver in ["v1", "v2"] if both else [paper_version]:
         if ver == "v1":
             path = [graph.components[n] for n in graph.topological_order()]
@@ -400,19 +416,85 @@ def check(
                 graph, target, sc["kb"], sc["strategies"], sc["target_slos"]
             )
             path = [graph.components[n] for n in verdict.envelope.path]
-        typer.secho(f"\n=== {ver} ===", bold=True)
-        _render(
-            AnalysisResult(
-                entrypoint=graph.entrypoint,
-                constraint="availability",
-                path=path,
-                verdict=verdict,
-                dropped_edges=[],
-                paper_version=ver,  # type: ignore[arg-type]
+        if output_format is OutputFormat.text:
+            typer.secho(f"\n=== {ver} ===", bold=True)
+            _render(
+                AnalysisResult(
+                    entrypoint=graph.entrypoint,
+                    constraint="availability",
+                    path=path,
+                    verdict=verdict,
+                    dropped_edges=[],
+                    paper_version=ver,  # type: ignore[arg-type]
+                )
             )
-        )
-    if verdict is not None and verdict.faults:
+        elif output_format is OutputFormat.json:
+            reports.append({"model": ver, "feasible": verdict.feasible, **verdict.model_dump()})
+        else:
+            findings.extend(
+                Finding(f"{ver}.{fault.metric}.{fault.direction}", fault.message)
+                for fault in verdict.faults
+            )
+    if output_format is OutputFormat.json:
+        _write_check_json(graph.entrypoint, verdict.feasible, reports)
+    elif output_format is OutputFormat.sarif:
+        typer.echo(json.dumps(sarif_report(topology, findings), indent=2))
+    if not verdict.feasible:
         raise typer.Exit(code=1)
+
+
+def _read_improvement_costs(path: Path | None) -> dict[str, float] | None:
+    if path is None:
+        return None
+    costs = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(costs, dict):
+        raise ValueError("use a YAML mapping of service names to costs per percentage point.")
+    return costs
+
+
+def _write_check_json(entrypoint: str, feasible: bool, reports: list[dict]) -> None:
+    typer.echo(json.dumps({
+        "schema_version": 1, "entrypoint": entrypoint, "feasible": feasible, "checks": reports,
+    }, indent=2))
+
+
+def _availability_finding(
+    result: AvailabilityCheck, repairs: list[ServiceImprovement],
+) -> Finding:
+    message = (
+        f"Target {result.target_pct:.12g}% exceeds achievable availability "
+        f"{result.achievable_pct:.12g}%."
+    )
+    if repairs:
+        first = repairs[0]
+        message += f" Top-ranked repair: improve {first.service} to {first.required_pct:.12g}%."
+    else:
+        message += " No single-service improvement can meet this target."
+    return Finding("availability.infeasible", message)
+
+
+def _render_independent_check(result: AvailabilityCheck, repairs: list[ServiceImprovement]) -> None:
+    typer.echo("Model: independent service states; declared availabilities without margins.")
+    typer.echo(f"Target: {result.target_pct:.12g}%")
+    typer.echo(f"Achievable: {result.achievable_pct:.12g}%")
+    typer.echo("Minimum availability with all other services unchanged:")
+    for name, threshold in result.thresholds_pct.items():
+        value = "not repairable alone" if threshold is None else f"{threshold:.12g}%"
+        typer.echo(f"  {name}: {value}")
+    typer.echo("Feasible" if result.feasible else "Infeasible")
+    if repairs:
+        priced = repairs[0].estimated_cost is not None
+        ranking = "estimated cost" if priced else "smallest availability increase"
+        typer.echo(f"Single-service repairs, ranked by {ranking}:")
+        for i, repair in enumerate(repairs, 1):
+            estimate = repair.estimated_cost
+            price = f"; cost {estimate:.12g}" if estimate is not None else ""
+            typer.echo(
+                f"  {i}. {repair.service}: {repair.current_pct:.12g}% -> "
+                f"{repair.required_pct:.12g}% (+{repair.increase_pp:.12g} points{price})"
+            )
+    elif not result.feasible:
+        typer.echo("No single-service improvement can meet this target.")
 
 
 @app.command("import-trace")

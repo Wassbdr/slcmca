@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from slacheck.models import DependencyGraph
@@ -16,6 +17,56 @@ class AvailabilityCheck:
     target_pct: float
     feasible: bool
     thresholds_pct: dict[str, float | None]
+
+
+@dataclass(frozen=True)
+class ServiceImprovement:
+    service: str
+    current_pct: float
+    required_pct: float
+    increase_pp: float
+    estimated_cost: float | None
+
+
+def suggest_improvements(
+    graph: DependencyGraph,
+    result: AvailabilityCheck,
+    costs_per_point: Mapping[str, float] | None = None,
+) -> list[ServiceImprovement]:
+    """Rank single-service repairs by supplied linear cost, or by percentage-point increase."""
+    if costs_per_point is not None:
+        for name, price in costs_per_point.items():
+            if name not in graph.components:
+                raise ValueError(f"remove unknown service {name!r} from the improvement costs.")
+            if isinstance(price, bool) or not isinstance(price, (int, float)) or not (
+                math.isfinite(price) and price >= 0
+            ):
+                raise ValueError(f"set the improvement cost for {name!r} to a nonnegative number.")
+    if result.feasible:
+        return []
+
+    repairs = []
+    for name, threshold in result.thresholds_pct.items():
+        if threshold is None:
+            continue
+        value = graph.components[name].slo.availability_pct
+        current = _percentage(value, f"{name}.availability_pct")
+        increase = threshold - current
+        if increase <= 0:
+            continue
+        cost = None
+        if costs_per_point is not None:
+            if name not in costs_per_point:
+                raise ValueError(f"add an improvement cost for {name!r} to the cost file.")
+            cost = costs_per_point[name] * increase
+            if not math.isfinite(cost):
+                raise ValueError(f"lower the improvement cost for {name!r}; estimate overflow.")
+        repairs.append(ServiceImprovement(name, current, threshold, increase, cost))
+    return sorted(repairs, key=lambda repair: (
+        repair.increase_pp if repair.estimated_cost is None else repair.estimated_cost,
+        repair.increase_pp,
+        repair.service,
+    ))
 
 
 class _DecisionDiagram:
