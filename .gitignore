@@ -1,4 +1,4 @@
-# Secrets — NEVER commit
+# Secrets: NEVER commit
 .env
 
 # Python
@@ -28,7 +28,7 @@ venv/
 *.fdb_latexmk
 issre_paper.pdf
 
-# Superseded paper artifacts — kept locally as an archive, not tracked (see docs/paper_mapping.md)
+# Superseded paper artifacts: kept locally as an archive, not tracked (see docs/paper_mapping.md)
 conference_101719.tex
 conference_101719.pdf
 ISSRE_2026__What_SLA_Can_I_Commit_To__v2.pdf
@@ -37,7 +37,7 @@ ISSRE_2026____What_SLA_Can_I_Commit_To__Computing_Achievable_and_Sustainable_Ser
 # OS / editor
 .DS_Store
 
-# IEEEtran class/bst (third-party, from CTAN — not ours to vendor)
+# IEEEtran class/bst (third-party, from CTAN: not ours to vendor)
 IEEEtran.cls
 IEEEtran.bst
 
@@ -45,10 +45,21 @@ IEEEtran.bst
 fixtures/eval_realistic_sweep/
 fixtures/eval_realistic_indep/
 
-# Internal cluster deployment scaffolding — not part of the tool or paper (kept local only)
+# Internal cluster deployment scaffolding: not part of the tool or paper (kept local only)
 deploy/
 
-# Internal working notes — not part of the published repo (kept local only)
+# Local tooling and notes
 CLAUDE.md
+AGENTS.md
+agents.md
+GEMINI.md
+.claude/
+.cursor/
+.cursorrules
+STATUS.md
+status.md
+PROGRESS.md
+progress.md
+site/
 .showcase-venv/
 showcase/demo_raw.mp4

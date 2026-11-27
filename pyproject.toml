@@ -4,12 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "slacheck"
-version = "0.1.0"
-description = "Compute the achievable SLA envelope of a multi-cloud app from live Datadog topology, extract a critical path under a user constraint, detect over-commitment, and publish a Datadog dashboard."
+version = "0.2.0"
+description = "Check availability commitments against a service dependency graph."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-authors = [{ name = "Wassim Badraoui", email = "wassim.badraoui07@gmail.com" }]
+authors = [{ name = "Wassim Badraoui" }]
+keywords = ["sre", "slo", "availability", "opentelemetry", "openslo"]
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: System :: Monitoring",
+]
 dependencies = [
     "networkx>=3.0",
     "pydantic>=2.0",
@@ -27,6 +40,13 @@ dev = [
     "mypy>=1.10",
     "types-PyYAML",
 ]
+docs = ["mkdocs>=1.6,<2"]
+showcase = ["matplotlib>=3.7"]
+
+[project.urls]
+Repository = "https://github.com/Wassbdr/slcmca"
+Issues = "https://github.com/Wassbdr/slcmca/issues"
+Changelog = "https://github.com/Wassbdr/slcmca/blob/showcase/2026-11/CHANGELOG.md"
 
 [project.scripts]
 slacheck = "slacheck.cli:app"
