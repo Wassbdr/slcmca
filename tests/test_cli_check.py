@@ -42,3 +42,10 @@ def test_eval_both_prints_totals():
 def test_eval_refuses_an_empty_dataset(tmp_path):
     r = runner.invoke(app, ["eval", "--dataset", str(tmp_path)])
     assert r.exit_code == 2
+
+
+def test_eval_default_dataset_has_all_scenarios() -> None:
+    # Checkout fixtures (editable) or the packaged copy (pip install .): same 113 files.
+    from slacheck import cli
+
+    assert len(list(cli._EVAL_DATASET.glob("*/*.yaml"))) == 113

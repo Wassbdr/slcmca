@@ -31,8 +31,29 @@ dev = [
 [project.scripts]
 slacheck = "slacheck.cli:app"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.setuptools]
+packages = [
+    "slacheck",
+    "slacheck.dashboard",
+    "slacheck.datadog",
+    "slacheck.envelope",
+    "slacheck.envelope.v2",
+    "slacheck.eval",
+    "slacheck.graph",
+    "slacheck.eval_fixtures.global_slo",
+    "slacheck.eval_fixtures.sub_slo",
+    "slacheck.eval_fixtures.reconfig",
+]
+
+[tool.setuptools.package-dir]
+"" = "src"
+# Ship the 113-scenario eval dataset so `slacheck eval` works outside the checkout.
+"slacheck.eval_fixtures" = "fixtures/eval"
+
+[tool.setuptools.package-data]
+"slacheck.eval_fixtures.global_slo" = ["*.yaml"]
+"slacheck.eval_fixtures.sub_slo" = ["*.yaml"]
+"slacheck.eval_fixtures.reconfig" = ["*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

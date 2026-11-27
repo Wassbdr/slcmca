@@ -156,6 +156,7 @@ only) is documented in [fixtures/datadog_live/README.md](fixtures/datadog_live/R
 - v1 has no reconfiguration model, so the 0/43 on that class is structural, not measured.
 - Datadog exposes no per-service cost; cost comes from a YAML override or a k8s resource estimate.
 - Live mode needs Datadog API and app keys; nothing in the showcase or the tests calls it.
-- `slacheck eval` and `slacheck analyze --source fixture` read `fixtures/` from the source
-  checkout, so run them from the repository root after `pip install .`.
+- `slacheck eval` ships its 113 scenarios in the package and runs from any directory;
+  `slacheck analyze --source fixture` still reads `fixtures/datadog/` from the checkout (or
+  `./fixtures`), so run that one from the repository root.
 - Next: a JSON output mode for `check`, and a GitHub Action that runs `check` on a topology file.

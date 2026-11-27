@@ -25,8 +25,9 @@ from slacheck.pipeline import AnalysisResult, analyze
 app = typer.Typer(add_completion=False, help="Achievable SLA envelope from Datadog topology.")
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-# Source checkout first; after a regular `pip install .` the fixtures are read from ./fixtures.
-_DATA_ROOT = _REPO_ROOT if (_REPO_ROOT / "fixtures").is_dir() else Path.cwd()
+_REPO_EVAL = _REPO_ROOT / "fixtures" / "eval"
+# Source checkout first; a regular `pip install .` ships the same files as slacheck/eval_fixtures.
+_EVAL_DATASET = _REPO_EVAL if _REPO_EVAL.is_dir() else Path(__file__).parent / "eval_fixtures"
 
 
 def _apply_cost_overrides(result: AnalysisResult, path_file: Path | None) -> None:
@@ -273,7 +274,7 @@ def doctor() -> None:
 
 @app.command(name="eval")
 def eval_cmd(
-    dataset: Path = typer.Option(_DATA_ROOT / "fixtures" / "eval", help="Eval dataset dir."),
+    dataset: Path = typer.Option(_EVAL_DATASET, help="Eval dataset dir."),
     paper_version: str = typer.Option("v2", "--paper-version", help="v1 | v2"),
     both: bool = typer.Option(False, help="Show v1 and v2 side by side."),
     latex: bool = typer.Option(False, help="Emit a paper-ready LaTeX table (v1 vs v2)."),
@@ -283,7 +284,7 @@ def eval_cmd(
 
     if not any(dataset.glob("*/*.yaml")):
         typer.secho(
-            f"No scenarios under {dataset}. Run from the repository root or pass --dataset.",
+            f"No scenarios under {dataset}. Pass --dataset DIR (one sub-directory per class).",
             fg=typer.colors.RED,
         )
         raise typer.Exit(code=2)

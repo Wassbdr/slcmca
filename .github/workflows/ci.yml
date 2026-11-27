@@ -20,7 +20,8 @@ jobs:
       - run: ruff check .
       - run: mypy
       - run: pytest -q
-      - name: Table I totals from the installed CLI
+      - name: Table I totals from the installed CLI, outside the checkout
+        working-directory: ${{ runner.temp }}
         run: |
           slacheck eval --both | tee eval.txt
           grep -E '^Total +113 +67$' eval.txt
