@@ -2,6 +2,8 @@
 
 Commands:
   analyze   run the pipeline and print envelope + faults (fixture or live)
+  check     check a self-contained topology YAML against a target SLO (v1 and/or v2)
+  eval      reproduce the fault-detection table (v1 vs v2) on the injected-fault dataset
   publish   build the dashboard and push it to Datadog (live, needs dashboards_write)
   record    capture live API responses into fixtures/datadog/ (live, needs keys)
   catalog   point to the Datadog API catalog doc
@@ -23,6 +25,8 @@ from slacheck.pipeline import AnalysisResult, analyze
 app = typer.Typer(add_completion=False, help="Achievable SLA envelope from Datadog topology.")
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
+# Source checkout first; after a regular `pip install .` the fixtures are read from ./fixtures.
+_DATA_ROOT = _REPO_ROOT if (_REPO_ROOT / "fixtures").is_dir() else Path.cwd()
 
 
 def _apply_cost_overrides(result: AnalysisResult, path_file: Path | None) -> None:
@@ -269,13 +273,20 @@ def doctor() -> None:
 
 @app.command(name="eval")
 def eval_cmd(
-    dataset: Path = typer.Option(_REPO_ROOT / "fixtures" / "eval", help="Eval dataset dir."),
+    dataset: Path = typer.Option(_DATA_ROOT / "fixtures" / "eval", help="Eval dataset dir."),
     paper_version: str = typer.Option("v2", "--paper-version", help="v1 | v2"),
     both: bool = typer.Option(False, help="Show v1 and v2 side by side."),
     latex: bool = typer.Option(False, help="Emit a paper-ready LaTeX table (v1 vs v2)."),
 ) -> None:
     """Reproduce the paper's fault-detection Table I for v1 and/or v2."""
     from slacheck.eval.runner import format_latex, format_table, run_eval
+
+    if not any(dataset.glob("*/*.yaml")):
+        typer.secho(
+            f"No scenarios under {dataset}. Run from the repository root or pass --dataset.",
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(code=2)
 
     if latex:
         v1, v2 = run_eval(dataset, "v1"), run_eval(dataset, "v2")
@@ -287,6 +298,69 @@ def eval_cmd(
         report = run_eval(dataset, ver)  # type: ignore[arg-type]
         typer.echo(format_table(report, ver))
         typer.echo("")
+
+
+@app.command()
+def check(
+    topology: Path = typer.Argument(..., exists=True, dir_okay=False, help="Topology YAML."),
+    slo: float | None = typer.Option(None, "--slo", help="Target availability (%), e.g. 99.9."),
+    max_latency_ms: float | None = typer.Option(None, help="Target max end-to-end latency (ms)."),
+    max_cost_eur_h: float | None = typer.Option(None, help="Target max cost (EUR/h)."),
+    paper_version: str = typer.Option("v2", "--paper-version", help="v1 | v2"),
+    both: bool = typer.Option(False, help="Run v1 (baseline) and v2 (full method) in turn."),
+) -> None:
+    """Check a self-contained topology YAML (components, edges, SLOs) against a target.
+
+    The file uses the scenario format of fixtures/eval (see examples/shop.yaml). Command-line
+    targets override the file's ``global_target``. Exits 1 when the last engine run finds a fault.
+    """
+    from slacheck.envelope.faults import evaluate as evaluate_v1
+    from slacheck.envelope.v2.evaluate_v2 import evaluate_v2
+    from slacheck.eval.runner import load_scenario
+
+    sc = load_scenario(topology)
+    graph = sc["graph"]
+    overrides = {
+        "availability_pct": slo,
+        "response_time_ms": max_latency_ms,
+        "cost_eur_h": max_cost_eur_h,
+    }
+    overrides = {k: v for k, v in overrides.items() if v is not None}
+    target = sc["target"]
+    if overrides:
+        target = (target or SloValues()).model_copy(update=overrides)
+
+    if target is not None:
+        typer.echo(f"Target Global-SLO : {target.model_dump(exclude_none=True)}")
+
+    verdict = None
+    for ver in ["v1", "v2"] if both else [paper_version]:
+        if ver == "v1":
+            path = [graph.components[n] for n in graph.topological_order()]
+            verdict = evaluate_v1(path, target)
+            if sc["strategies"]:
+                verdict.notes.append(
+                    f"v1 has no reconfiguration model: {len(sc['strategies'])} elasticity "
+                    "strategy(ies) in this file were not checked."
+                )
+        else:
+            verdict = evaluate_v2(
+                graph, target, sc["kb"], sc["strategies"], sc["target_slos"]
+            )
+            path = [graph.components[n] for n in verdict.envelope.path]
+        typer.secho(f"\n=== {ver} ===", bold=True)
+        _render(
+            AnalysisResult(
+                entrypoint=graph.entrypoint,
+                constraint="availability",
+                path=path,
+                verdict=verdict,
+                dropped_edges=[],
+                paper_version=ver,  # type: ignore[arg-type]
+            )
+        )
+    if verdict is not None and verdict.faults:
+        raise typer.Exit(code=1)
 
 
 @app.command()

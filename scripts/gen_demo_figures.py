@@ -98,7 +98,7 @@ def fig_full(g: nx.DiGraph, pos) -> None:
 def fig_path(g: nx.DiGraph, pos, constraint: str, envelope_note: str) -> None:
     path = _real_path(constraint)
     pset = set(path)
-    pedges = list(zip(path, path[1:]))  # consecutive pairs (intentionally unequal lengths)
+    pedges = list(zip(path, path[1:], strict=False))  # consecutive pairs (unequal lengths)
 
     fig, ax = plt.subplots(figsize=(7.5, 5.2))
     # dim everything
@@ -134,5 +134,7 @@ if __name__ == "__main__":
     pos = _layout(g)
     fig_full(g, pos)
     fig_path(g, pos, "latency", "achievable end-to-end latency = 24 ms (sum along the path)")
-    fig_path(g, pos, "availability", "achievable availability = 99.40% (error budget along the path)")
+    fig_path(
+        g, pos, "availability", "achievable availability = 99.40% (error budget along the path)"
+    )
     print("done")

@@ -8,7 +8,9 @@ from typing import Literal
 
 from slacheck.datadog.source import K8sMetricKind
 
-_FIXTURES = Path(__file__).resolve().parents[3] / "fixtures" / "datadog"
+_REPO_FIXTURES = Path(__file__).resolve().parents[3] / "fixtures" / "datadog"
+# Source checkout (editable install) first; for a regular `pip install .` fall back to ./fixtures.
+_FIXTURES = _REPO_FIXTURES if _REPO_FIXTURES.is_dir() else Path.cwd() / "fixtures" / "datadog"
 
 _METRIC_FILES = {
     "latency_p99": "metrics_latency_p99.json",
