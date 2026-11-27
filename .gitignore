@@ -50,3 +50,5 @@ deploy/
 
 # Internal working notes — not part of the published repo (kept local only)
 CLAUDE.md
+.showcase-venv/
+showcase/demo_raw.mp4

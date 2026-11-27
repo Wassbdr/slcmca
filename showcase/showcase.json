@@ -1,0 +1,83 @@
+{
+  "slug": "slcmca",
+  "title": "slacheck: achievable SLOs for distributed applications",
+  "tagline": "Given a service topology and per-service SLOs, slacheck computes the SLO the whole application can actually promise and names the sub-objective that breaks it.",
+  "problem": "Teams promise an end-to-end SLA (say 99.9%) without checking it against what their dependencies deliver. The gap surfaces in production as a breached SLA, a weak dependency, or an autoscaling rule that reacts too late.",
+  "approach": "The topology is a typed DAG (required vs redundant calls). Ascending aggregation composes per-service latency, error budget and cost into the achievable envelope, minus a cloud-tier safety margin. Descending decomposition splits the target into per-service thresholds weighted by structural centrality, and autoscaling triggers are checked against the operational bound that keeps the SLO.",
+  "stack": [
+    "Python",
+    "networkx",
+    "pydantic",
+    "Typer",
+    "PyYAML",
+    "Datadog API",
+    "pytest",
+    "matplotlib",
+    "vhs"
+  ],
+  "demo": {
+    "gif": "showcase/demo.gif",
+    "mp4": "showcase/demo.mp4",
+    "poster": "showcase/poster.png",
+    "kind": "live",
+    "caption": "pip install, then the 113-scenario evaluation (v1 67/113 vs v2 113/113), one reconfiguration fault v1 misses and v2 catches, and a 7-service shop checked against 99.9%."
+  },
+  "reproduce": [
+    "git clone https://github.com/Wassbdr/slcmca && cd slcmca",
+    "pip install .",
+    "slacheck eval --both",
+    "slacheck check examples/shop.yaml --slo 99.9"
+  ],
+  "results": [
+    {
+      "label": "Injected faults detected, v2 (full method)",
+      "value": "113/113",
+      "command": "slacheck eval --both",
+      "setup": "fixtures/eval: 113 constructed injected-fault scenarios (deterministic, scripts/gen_eval.py); Intel(R) Xeon(R) Processor, 8 vCPU, CPU only, Python 3.10.12"
+    },
+    {
+      "label": "Injected faults detected, v1 (critical-path baseline)",
+      "value": "67/113",
+      "command": "slacheck eval --both",
+      "setup": "fixtures/eval: 113 constructed injected-fault scenarios (deterministic, scripts/gen_eval.py); Intel(R) Xeon(R) Processor, 8 vCPU, CPU only, Python 3.10.12"
+    },
+    {
+      "label": "Global-SLO Inconsistencies: v1 vs v2",
+      "value": "10/10 vs 10/10",
+      "command": "slacheck eval --both",
+      "setup": "fixtures/eval: 113 constructed injected-fault scenarios (deterministic, scripts/gen_eval.py); Intel(R) Xeon(R) Processor, 8 vCPU, CPU only, Python 3.10.12"
+    },
+    {
+      "label": "Sub-SLO Inconsistencies: v1 vs v2",
+      "value": "57/60 vs 60/60",
+      "command": "slacheck eval --both",
+      "setup": "fixtures/eval: 113 constructed injected-fault scenarios (deterministic, scripts/gen_eval.py); Intel(R) Xeon(R) Processor, 8 vCPU, CPU only, Python 3.10.12"
+    },
+    {
+      "label": "Reconfiguration Inconsistencies: v1 vs v2",
+      "value": "0/43 vs 43/43",
+      "command": "slacheck eval --both",
+      "setup": "fixtures/eval: 113 constructed injected-fault scenarios (deterministic, scripts/gen_eval.py); Intel(R) Xeon(R) Processor, 8 vCPU, CPU only, Python 3.10.12"
+    },
+    {
+      "label": "Sub-SLO faults detected on synthetic topologies, v2 (weighted)",
+      "value": "89.5% (179/200, 95% CI 84.5-93.0%)",
+      "command": "python scripts/realistic_study.py",
+      "setup": "fixtures/eval_realistic: 200 synthetic Alibaba-like topologies, fixed seed (scripts/gen_realistic_eval.py 200); Wilson 95% CI; Intel(R) Xeon(R) Processor, 8 vCPU, CPU only, Python 3.10.12"
+    },
+    {
+      "label": "Sub-SLO faults detected on synthetic topologies, v1 (uniform)",
+      "value": "4.0% (8/200, 95% CI 2.0-7.7%)",
+      "command": "python scripts/realistic_study.py",
+      "setup": "fixtures/eval_realistic: 200 synthetic Alibaba-like topologies, fixed seed (scripts/gen_realistic_eval.py 200); Wilson 95% CI; Intel(R) Xeon(R) Processor, 8 vCPU, CPU only, Python 3.10.12"
+    }
+  ],
+  "limits": [
+    "The 113 scenarios are a constructed dataset with injected faults: they show the mechanism, not the false-alarm rate on a real fleet.",
+    "v1 has no reconfiguration model, so its 0/43 on that class is by construction.",
+    "Live mode needs Datadog API/app keys; the showcase runs offline on fixtures.",
+    "Per-service cost is not exposed by Datadog; it comes from a YAML override or a k8s resource estimate."
+  ],
+  "role": "TODO",
+  "repo": "https://github.com/Wassbdr/slcmca"
+}
