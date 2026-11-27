@@ -45,7 +45,7 @@ probability calculation and ignores residual failure in optional branches.
 The Workbook explicitly cautions against ignoring common failure domains;
 it does not prescribe this worksheet as a general graph solver.
 
-Use `slacheck check examples/shop.yaml --independent --slo 99.9` for the same
+Use `slacheck check examples/shop.yaml --slo 99.9` for the same
 model on a declared topology. It operates on the declared availabilities
 without paper-v2 safety margins. Distinct services with correlated failures
 need a modeled shared dependency; the probabilities alone do not determine

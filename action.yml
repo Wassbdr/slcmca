@@ -44,7 +44,7 @@ runs:
         TARGET: ${{ inputs.slo }}
         SLO_NAME: ${{ inputs.slo-name }}
       run: |
-        args=(check --independent --format sarif)
+        args=(check --format sarif)
         if [[ -n "$GRAPH" ]]; then args+=(--graph "$GRAPH"); fi
         if [[ -n "$TARGET" ]]; then args+=(--slo "$TARGET"); fi
         if [[ -n "$SLO_NAME" ]]; then args+=(--slo-name "$SLO_NAME"); fi

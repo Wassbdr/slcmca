@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 SHOWCASE = ROOT / "showcase"
-CHECK = "slacheck check examples/shop.yaml --independent --slo 99.94"
+CHECK = "slacheck check examples/shop.yaml --slo 99.94"
 
 
 def benchmark() -> tuple[dict[str, list[int]], str, float]:

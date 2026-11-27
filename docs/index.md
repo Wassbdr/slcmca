@@ -7,7 +7,7 @@ a priced repair.
 
 ```sh
 python -m pip install .
-slacheck check examples/shop.yaml --independent --slo 99.94
+slacheck check examples/shop.yaml --slo 99.94
 ```
 
 The second command deliberately exits with status 1 and prints repair options.

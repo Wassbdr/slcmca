@@ -25,7 +25,7 @@ def check_imports():
 
 check_imports()
 assert 'pydantic' not in sys.modules
-app(['check', sys.argv[1], '--independent', '--slo', '99.9'], standalone_mode=False)
+app(['check', sys.argv[1], '--slo', '99.9'], standalone_mode=False)
 check_imports()
 """, str(shop)],
         capture_output=True, text=True, check=True,

@@ -7,7 +7,7 @@ slacheck helps SREs check whether a service dependency graph can meet an availab
 ```sh
 git clone --branch showcase/2026-11 https://github.com/Wassbdr/slcmca && cd slcmca
 python -m venv .venv && .venv/bin/python -m pip install .
-.venv/bin/slacheck check examples/shop.yaml --independent --slo 99.94
+.venv/bin/slacheck check examples/shop.yaml --slo 99.94
 ```
 
 ### Results
@@ -48,8 +48,10 @@ flowchart LR
   smallest availability increase.
 
 Exit 0 means feasible, 1 means infeasible, and 2 means invalid input.
-`--independent` only checks availability. Paper v2 remains the default for
-compatibility and safety margins; `--paper-version v1` selects the v1 baseline.
+The default exact method checks availability and assumes distinct services fail
+independently. Shared dependencies use one state. Use `--method v2` for ISSRE
+reproduction or when independence is not justified and you need conservative
+composition with safety margins. Use `--method v1` for the paper baseline.
 See [architecture](docs/architecture.md) for the differences.
 
 ### Development and paper results

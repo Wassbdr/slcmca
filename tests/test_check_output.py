@@ -22,7 +22,7 @@ def topology(tmp_path):
 
 
 def test_json_reports_conditional_repairs(topology):
-    run = CliRunner().invoke(app, ["check", str(topology), "--independent", "--format", "json"])
+    run = CliRunner().invoke(app, ["check", str(topology), "--format", "json"])
     assert run.exit_code == 1
     report = json.loads(run.stdout)
     assert report["schema_version"] == 1
@@ -41,7 +41,7 @@ def test_json_reports_conditional_repairs(topology):
 def test_rank_costed_repairs_and_validate_cost_coverage(topology, tmp_path):
     path = tmp_path / "costs.yaml"
     commands = [
-        "check", str(topology), "--independent", "--format", "json",
+        "check", str(topology), "--format", "json",
         "--improvement-costs", str(path),
     ]
     path.write_text("web: 5\ndb: 1\n")
@@ -61,7 +61,7 @@ def test_rank_costed_repairs_and_validate_cost_coverage(topology, tmp_path):
 def test_sarif_has_encoded_source_path_and_actionable_repair(topology, monkeypatch):
     monkeypatch.chdir(topology.parent)
     run = CliRunner().invoke(
-        app, ["check", topology.name, "--independent", "--format", "sarif"],
+        app, ["check", topology.name, "--format", "sarif"],
     )
     assert run.exit_code == 1
     report = json.loads(run.stdout)
@@ -77,7 +77,7 @@ def test_sarif_has_encoded_source_path_and_actionable_repair(topology, monkeypat
 
 def test_feasible_sarif_has_no_results(topology):
     run = CliRunner().invoke(
-        app, ["check", str(topology), "--independent", "--format", "sarif", "--slo", "99.8"],
+        app, ["check", str(topology), "--format", "sarif", "--slo", "99.8"],
     )
     assert run.exit_code == 0, run.output
     assert json.loads(run.stdout)["runs"][0]["results"] == []

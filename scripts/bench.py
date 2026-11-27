@@ -161,7 +161,7 @@ def cli_time(root: Path, case: Case, expected: Result) -> float:
         "edges": [edge.model_dump() for edge in graph.edges],
         "global_target": {"availability_pct": case.target},
     }))
-    command = [sys.executable, "-m", "slacheck.cli", "check", str(path), "--independent"]
+    command = [sys.executable, "-m", "slacheck.cli", "check", str(path)]
     run, ms = timed(lambda: subprocess.run(
         command, capture_output=True, text=True, timeout=30, check=False,
     ))
@@ -383,15 +383,16 @@ def main() -> None:
         "plus threshold output for slacheck or validation or rule generation for references.",
         "Reference manifests carry the same root objective and an SLI selector,",
         "not the graph or service availabilities.", "",
-        "| Method | Development median / max | Held-out median / max |",
-        "| --- | ---: | ---: |",
+        "| Method | Execution | Development median / max | Held-out median / max |",
+        "| --- | --- | ---: | ---: |",
     ])
     for name, samples in timings.items():
         formatted = [f"{statistics.median(values):.2f} / {max(values):.2f}" for values in samples]
-        lines.append(f"| {name} | {' | '.join(formatted)} |")
+        execution = "In process" if name in methods else "CLI"
+        lines.append(f"| {name} | {execution} | {' | '.join(formatted)} |")
     for name in tools:
         if name in missing:
-            lines.append(f"| {name} | not installed | not installed |")
+            lines.append(f"| {name} | CLI | not installed | not installed |")
     baseline = score(truth, predictions["slacheck v2"])
     current = score(truth, predictions["slacheck independent"])
     positives = sum(item.infeasible for item in truth)

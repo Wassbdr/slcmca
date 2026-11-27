@@ -31,5 +31,8 @@ graphs. Arbitrary correlation between distinct services is not inferred.
 Paper v1 and v2 remain available for reproducing earlier evaluations. Paper v2
 estimates safety margins and includes latency, costs, and reconfiguration checks.
 Its structural weights allocate a budget, which is a different question from
-the minimum required by one service with other values fixed. The CLI keeps v2
-as its default instead of silently changing the model.
+the minimum required by one service with other values fixed. The default exact
+method assumes distinct services fail independently and applies no margins.
+When that assumption cannot be justified, use `slacheck check --method v2` for
+more conservative composition and configured margins. V2 does not infer
+correlation either; model known shared failure domains explicitly.

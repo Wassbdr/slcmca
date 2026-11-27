@@ -28,8 +28,8 @@ domains as dependencies if you can measure their probabilities separately.
 ## Check and act on the result
 
 ```sh
-slacheck check topology.yaml --independent --slo 99.9
-slacheck check topology.yaml --independent --slo 99.9 --format json
+slacheck check topology.yaml --slo 99.9
+slacheck check topology.yaml --slo 99.9 --format json
 ```
 
 Exit 0 means feasible under the selected model, 1 means infeasible, and 2 means

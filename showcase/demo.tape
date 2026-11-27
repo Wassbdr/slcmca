@@ -16,13 +16,13 @@ Enter
 Sleep 500ms
 Show
 
-Type "slacheck check examples/shop.yaml --independent --slo 99.94"
+Type "slacheck check examples/shop.yaml --slo 99.94"
 Enter
 Wait+Screen@8s /Single-service repairs/
 Sleep 8s
 Type "clear"
 Enter
-Type "slacheck check examples/shop-openslo.yaml --graph examples/shop.yaml --independent"
+Type "slacheck check examples/shop-openslo.yaml --graph examples/shop.yaml"
 Enter
 Wait+Screen@8s /Feasible/
 Sleep 5s

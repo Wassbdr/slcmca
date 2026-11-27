@@ -331,10 +331,12 @@ def check(
     slo: float | None = typer.Option(None, "--slo", help="Target availability (%), e.g. 99.9."),
     max_latency_ms: float | None = typer.Option(None, help="Target max end-to-end latency (ms)."),
     max_cost_eur_h: float | None = typer.Option(None, help="Target max cost (EUR/h)."),
-    paper_version: str = typer.Option("v2", "--paper-version", help="v1 | v2"),
+    method: str | None = typer.Option(
+        None, "--method", "--paper-version", help="exact (default) | v1 | v2",
+    ),
     both: bool = typer.Option(False, help="Run v1 (baseline) and v2 (full method) in turn."),
     independent: bool = typer.Option(
-        False, "--independent", help="Check only availability using independent service states."
+        False, "--independent", help="Deprecated alias for --method exact."
     ),
     graph_file: Path | None = typer.Option(
         None, "--graph", exists=True, dir_okay=False, help="Topology YAML for an OpenSLO input."
@@ -347,16 +349,21 @@ def check(
 ) -> None:
     """Check a declared topology, or an OpenSLO availability target with --graph.
 
+    By default, check availability with independent service states and no safety margins.
     Command-line targets override targets in the input. Exits 1 when the last check finds a fault.
     """
     if slo_name is not None and graph_file is None:
         raise typer.BadParameter("--slo-name requires OpenSLO YAML with --graph.")
-    if improvement_costs is not None and not independent:
-        raise typer.BadParameter("--improvement-costs requires --independent.")
-    if independent:
-        other_metrics = max_latency_ms is not None or max_cost_eur_h is not None
-        if both or paper_version != "v2" or other_metrics:
-            raise typer.BadParameter("--independent checks availability only; use it with --slo.")
+    if method not in (None, "exact", "v1", "v2"):
+        raise typer.BadParameter("Use --method exact, v1 or v2.")
+    if (independent and (both or method in ("v1", "v2"))) or (both and method == "exact"):
+        raise typer.BadParameter("Use --method exact or paper methods, not both.")
+    exact = not both and method in (None, "exact")
+    if improvement_costs is not None and not exact:
+        raise typer.BadParameter("--improvement-costs requires the exact method.")
+    if exact:
+        if max_latency_ms is not None or max_cost_eur_h is not None:
+            raise typer.BadParameter("The exact method checks only availability; use --method v2.")
         try:
             graph, goal_pct = load_check_input(graph_file or topology)
             if graph_file is not None:
@@ -412,14 +419,12 @@ def check(
     if overrides:
         target = (target or SloValues()).model_copy(update=overrides)
 
-    if paper_version not in ("v1", "v2"):
-        raise typer.BadParameter("Use --paper-version v1 or v2.")
     if target is not None and output_format is OutputFormat.text:
         typer.echo(f"Target Global-SLO : {target.model_dump(exclude_none=True)}")
 
     reports = []
     findings = []
-    for ver in ["v1", "v2"] if both else [paper_version]:
+    for ver in ["v1", "v2"] if both else [method or "v2"]:
         if ver == "v1":
             path = [paper_graph.components[n] for n in paper_graph.topological_order()]
             verdict = evaluate_v1(path, target)
