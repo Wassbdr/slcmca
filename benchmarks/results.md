@@ -46,13 +46,13 @@ not the graph or service availabilities.
 
 | Method | Development median / max | Held-out median / max |
 | --- | ---: | ---: |
-| slacheck independent | 2.10 / 2.26 | 4.04 / 11.33 |
-| slacheck v2 | 9.32 / 10.76 | 13.93 / 18.41 |
-| Hand error budget | 1.97 / 3.39 | 2.60 / 3.00 |
-| slacheck independent CLI | 326.29 / 356.00 | 342.34 / 351.08 |
-| Sloth | 22.75 / 25.21 | 23.74 / 28.15 |
-| Pyrra | 14.27 / 16.41 | 14.34 / 17.95 |
-| OpenSLO | 4.22 / 4.40 | 4.32 / 4.75 |
+| slacheck independent | 2.07 / 2.35 | 3.99 / 10.90 |
+| slacheck v2 | 8.94 / 9.02 | 12.90 / 12.96 |
+| Hand error budget | 1.64 / 1.69 | 2.06 / 2.10 |
+| slacheck independent CLI | 321.11 / 330.19 | 350.03 / 397.51 |
+| Sloth | 21.90 / 23.69 | 22.74 / 24.56 |
+| Pyrra | 13.74 / 14.80 | 13.79 / 13.99 |
+| OpenSLO | 3.90 / 5.24 | 4.34 / 4.96 |
 
 ## Iteration 1: model shared service states and solve conditional thresholds
 
