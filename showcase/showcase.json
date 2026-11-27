@@ -78,6 +78,6 @@
     "Live mode needs Datadog API/app keys; the showcase runs offline on fixtures.",
     "Per-service cost is not exposed by Datadog; it comes from a YAML override or a k8s resource estimate."
   ],
-  "role": "TODO",
+  "role": "Sole developer. Built during my ML research internship at Devoteam (AIOps), where it is used internally. Co-author of the accompanying research, which I presented in the ISSRE 2026 industry session.",
   "repo": "https://github.com/Wassbdr/slcmca"
 }

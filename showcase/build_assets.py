@@ -143,6 +143,14 @@ def poster(ev: dict, rl: dict, hw: str) -> None:
     plt.close(fig)
 
 
+def existing_role() -> str:
+    """The owner writes `role` by hand; keep it across rebuilds."""
+    try:
+        return json.loads((OUT / "showcase.json").read_text()).get("role") or "TODO"
+    except (FileNotFoundError, json.JSONDecodeError):
+        return "TODO"
+
+
 def showcase_json(ev: dict, rl: dict, hw: str) -> None:
     t1, t2 = ev["v1"]["Total"], ev["v2"]["Total"]
     eval_setup = ("fixtures/eval: 113 constructed injected-fault scenarios (deterministic, "
@@ -199,7 +207,7 @@ def showcase_json(ev: dict, rl: dict, hw: str) -> None:
             "Per-service cost is not exposed by Datadog; it comes from a YAML override or a "
             "k8s resource estimate.",
         ],
-        "role": "TODO",
+        "role": existing_role(),
         "repo": "https://github.com/Wassbdr/slcmca",
     }
     (OUT / "showcase.json").write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
