@@ -50,7 +50,7 @@ class EvalReport:
         return self.by_category.get(category, (0, 0))[0]
 
 
-def _load_scenario(path: Path) -> dict:
+def load_scenario(path: Path) -> dict:
     raw = yaml.safe_load(path.read_text())
     components = {
         c["name"]: Component(
@@ -73,7 +73,7 @@ def _load_scenario(path: Path) -> dict:
         "kb": KnowledgeBase(**raw["knowledge_base"]) if raw.get("knowledge_base") else None,
         "strategies": [ReconfigStrategy(**s) for s in raw.get("reconfig_strategies", [])],
         "target_slos": raw.get("target_slos", []),
-        "expected": raw["expected"],  # {category, metric}
+        "expected": raw.get("expected"),  # {category, metric}; absent for user topologies
     }
 
 
@@ -86,7 +86,7 @@ def _detect(scenario: dict, paper_version: PaperVersion) -> bool:
     """Run the engine and report whether the SPECIFIC injected fault was detected.
 
     Matches on the expected ``metric`` and, when given, the exact ``component`` and
-    ``direction`` — so a fault on a different component (or direction) does NOT count as a
+    ``direction``: so a fault on a different component (or direction) does NOT count as a
     detection. This is what makes the v1 57/60 vs v2 60/60 result meaningful.
     """
     exp = scenario["expected"]
@@ -129,7 +129,7 @@ def run_eval(dataset_dir: Path, paper_version: PaperVersion) -> EvalReport:
         injected = len(scenarios)
         detected = 0
         for path in scenarios:
-            scenario = _load_scenario(path)
+            scenario = load_scenario(path)
             if _detect(scenario, paper_version):
                 detected += 1
             else:
@@ -145,6 +145,9 @@ def format_table(report: EvalReport, paper_version: str) -> str:
     for cat in CATEGORIES:
         inj, det = report.by_category.get(cat, (0, 0))
         lines.append(f"{_LABELS[cat]:<32}{inj:>10}{det:>10}")
+    total_inj = sum(inj for inj, _ in report.by_category.values())
+    total_det = sum(det for _, det in report.by_category.values())
+    lines.append(f"{'Total':<32}{total_inj:>10}{total_det:>10}")
     return "\n".join(lines)
 
 
@@ -152,8 +155,8 @@ def format_latex(v1: EvalReport, v2: EvalReport) -> str:
     """Render the paper's Table I (``tab:eval``) from live detection counts.
 
     The code is the single source of truth for this table: the output is meant to be pasted
-    verbatim into ``issre_paper.tex``. It therefore matches the paper's framing exactly —
-    columns are the ablated **Baseline** (v1) and the **Full** method (v2), not "v1/v2" — and
+    verbatim into ``issre_paper.tex``. It therefore matches the paper's framing exactly :
+    columns are the ablated **Baseline** (v1) and the **Full** method (v2), not "v1/v2": and
     includes the injected/detected **Total** row. Regenerate with ``slacheck eval --both --latex``.
     """
     rows = []

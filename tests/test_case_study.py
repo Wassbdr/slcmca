@@ -64,7 +64,7 @@ def test_v2_recovers_three_hubs_v1_misses():
         "ts-station-service",
         "ts-train-service",
     }
-    # robust invariant (less fragile than the exact counts above)
+    # Check the direction of the change independently of the exact counts.
     assert len(v2.verdict.faults) > len(v1.verdict.faults)
 
 

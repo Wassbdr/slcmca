@@ -1,82 +1,86 @@
 # slacheck
 
-> *What SLA can I commit to?* Compute the **achievable SLA envelope** of a multi-cloud /
-> microservices application **from live Datadog topology**, extract a **critical path** under a
-> user constraint, detect **over-commitment faults**, and publish a **Datadog dashboard**.
+slacheck helps SREs check whether a service dependency graph can meet an availability objective and find the smallest service change that would meet it.
 
-This is the artifact for the ISSRE 2026 industry-track paper *"What SLA Can I Commit To? Computing
-Achievable Service-Level Objectives for Multi-Cloud Applications"*. `slacheck` validates an SLA
-either on a hand-written YAML topology or by building the topology **automatically from Datadog**
-(validated end-to-end on the `train-ticket` benchmark), and presents the result back inside Datadog.
+<img src="showcase/demo.gif" width="560" alt="Availability check with an infeasible verdict and a ranked repair">
 
-## How it works
-
-```
-Datadog APM ──topology──┐
-                        ├─► nx.DiGraph ─► critical path ─► envelope ─► verdict ─► Datadog dashboard
-Datadog Metrics ─SLOs───┘     (graph/)    (graph/)         (envelope/)            (dashboard/)
+```sh
+git clone --branch showcase/2026-11 https://github.com/Wassbdr/slcmca && cd slcmca
+python -m venv .venv && .venv/bin/python -m pip install .
+.venv/bin/slacheck check examples/shop.yaml --slo 99.94
 ```
 
-- **Ascending aggregation** (paper §III-B): combine per-component Sub-SLOs into the guaranteeable
-  global envelope: `max` latency, `sum` cost, error-budget composition for availability.
-- **Descending decomposition** (§III-C): split a target Global-SLO into per-component thresholds.
-- **Critical path**: the DAG is reduced to a single **series path** (max-latency or
-  min-availability chain) so the paper's series-only operators apply legitimately.
+### Results
 
-## Quickstart (offline, no Datadog keys needed)
+In 72 seeded synthetic graphs, slacheck found all 34 infeasible commitments and matched all 712 conditional thresholds. Both 200-service CLI cases took under 1 second on an Intel Xeon x86-64 CPU, Python 3.10, without a GPU. Reproduce with `make bench`; see the [reference versions, seeds](benchmarks/README.md), and [full results](benchmarks/results.md).
 
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-pytest                      # paper's numbers are the regression contract
-slacheck analyze --source fixture --entrypoint ts-gateway-service --constraint availability
+| Method | Infeasible found | Precision | Exact thresholds |
+| --- | ---: | ---: | ---: |
+| slacheck independent | **34/34** | **34/34** | **712/712** |
+| Hand error-budget worksheet | 34/34 | 34/38 | Not computed |
+| slacheck paper v2 | 29/34 | 29/37 | 0/712 |
+| Sloth | 0/34 | N/A | Not computed |
+| Pyrra | 0/34 | N/A | Not computed |
+| OpenSLO oslo | 0/34 | N/A | Not computed |
+
+Sloth, Pyrra and oslo accepted the reference manifests. These validate objectives
+or generate rules; their manifests do not express dependency success conditions.
+
+```mermaid
+flowchart LR
+  T["Topology YAML or trace export"] --> G["Required and alternative dependencies"]
+  S["OpenSLO or explicit target"] --> C["Availability check"]
+  G --> C
+  C --> R["Verdict, thresholds, repair"]
 ```
 
-## Live mode (requires keys, see docs/datadog_api_catalog.md)
+### Use your own data
 
-```bash
-cp .env.example .env        # fill DD_API_KEY / DD_APP_KEY / DD_SITE / DD_ENV
-pip install -e ".[dev,datadog]"
-slacheck catalog            # what data Datadog exposes (also a static doc in docs/)
-slacheck record             # capture real API responses into fixtures/datadog/
-slacheck analyze --source live --entrypoint ts-gateway-service --constraint latency
-slacheck publish --source live --entrypoint ts-gateway-service --constraint latency
+- Follow the [tutorial](docs/tutorial.md) for local availability measurements,
+  graphs built from OTLP, Jaeger or Tempo, and a CI workflow.
+- Try the [three worked examples](docs/examples.md): an infeasible shop
+  commitment, an OpenSLO objective and an imported trace.
+- Use `--format json` to consume a result in code or `--format sarif` for code
+  scanning. The [composite action](action.yml) writes SARIF and fails infeasible
+  changes. See the [example workflow](examples/workflows/availability.yml).
+- Supply `--improvement-costs costs.yaml` to rank single-service repairs by
+  linear cost per percentage point. With no cost file, ranking uses the
+  smallest availability increase.
+
+Exit 0 means feasible, 1 means infeasible, and 2 means invalid input.
+The default exact method checks availability and assumes distinct services fail
+independently. Shared dependencies use one state. Use `--method v2` for ISSRE
+reproduction or when independence is not justified and you need conservative
+composition with safety margins. Use `--method v1` for the paper baseline.
+See [architecture](docs/architecture.md) for the differences.
+
+### Development and paper results
+
+```sh
+python -m pip install -e '.[dev,docs]'
+make check docs
+make eval
 ```
 
-## Reproducing the empirical evaluation
+The ISSRE 2026 paper evaluations remain available. `make eval` reproduces
+67/113 detections for paper v1 and 113/113 for paper v2.
+`python scripts/realistic_study.py` reproduces 8/200 (4.0%) and 179/200 (89.5%)
+on a separate synthetic population. These are injected-fault results, not
+production false-alarm rates. See the [paper mapping](docs/paper_mapping.md)
+and the [Datadog integration reference](docs/datadog_api_catalog.md).
 
-Everything in `issre_paper.tex` is reproducible **offline**, no credentials. One command runs the
-whole thing (datasets → tables → figures) and echoes each paper claim next to the code's output:
+To rebuild the media and metadata, put VHS 0.10, ttyd 1.7, FFmpeg, and the
+[benchmark binaries](benchmarks/README.md) on PATH, install DejaVu Sans Mono,
+and run `make showcase`.
 
-```bash
-python scripts/reproduce_paper.py     # or: make reproduce
-make eval                             # just Table I (tab:eval) as paste-ready LaTeX
-```
+### Roadmap and known limitations
 
-The individual levels, if you want them one at a time:
-
-```bash
-# 1. Real-world case study: train-ticket (38 services), v1 vs v2:
-python scripts/case_study.py          # v2: 6 faults / env 98.36%; v1: 3 / 99.40%; latency false-negative
-slacheck analyze --source declared --topology fixtures/topology/train-ticket.yaml \
-  --metrics-from fixture --paper-version v2 -e ts-ui-dashboard -c availability \
-  --min-availability-pct 99.9 --pricing fixtures/scenarios/pricing.example.yaml
-
-# 2. Multiple real systems: train-ticket + Online Boutique (call graph from the GCP manifest):
-python scripts/multi_system_study.py  # emits Table tab:realsystems
-
-# 3. Statistical validation: 200 realistic topologies (Alibaba-like distributions, fixed seed):
-python scripts/gen_realistic_eval.py 200   # (re)generate the dataset (deterministic)
-python scripts/realistic_study.py          # v2 89.5% vs v1 4.0% [Wilson 95% CI], Table tab:realistic
-```
-
-Tests lock these numbers: `tests/test_case_study.py` (real systems) and
-`tests/test_realistic_study.py` (population). The live Datadog path (real APM topology, provenance
-only) is documented in [fixtures/datadog_live/README.md](fixtures/datadog_live/README.md).
-
-## Docs
-
-- [docs/datadog_api_catalog.md](docs/datadog_api_catalog.md): **start here**, what Datadog exposes,
-  the exact API calls, metric→SLO conversions, and known gaps.
-- [docs/paper_mapping.md](docs/paper_mapping.md): paper section to code module mapping.
-- [docs/live_unblock.md](docs/live_unblock.md): runbook for pointing the live path at another org.
+- Availability is exact under the declared Boolean dependency rules and
+  independent states for distinct services. Model known common failure
+  domains explicitly; a topology does not establish independence.
+- Trace sampling can omit edges. Verify the imported graph and supply measured
+  local service availability. Imports do not infer redundancy.
+- The repair ranking changes one service at a time. Joint repair budgets and
+  non-linear prices are not modeled.
+- The independent checker stops on cycles and scopes that exceed its
+  decision diagram limits. Split commitments by entrypoint when possible.

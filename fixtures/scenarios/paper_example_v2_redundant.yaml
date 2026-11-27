@@ -1,5 +1,5 @@
 # Paper-v2 disjunctive redundancy case: Stor is backed by two redundant providers
-# StorA / StorB (each 99.9%), wired as DISJUNCTIVE (OR) — the system stays up if either is up.
+# StorA / StorB (each 99.9%), wired as DISJUNCTIVE (OR): the system stays up if either is up.
 # Exercises the product operator: disjunctive availability of two 99.9% = 99.9999%,
 # which raises the global envelope above the all-conjunctive 99.8%.
 

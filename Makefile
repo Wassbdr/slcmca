@@ -1,10 +1,10 @@
-# slacheck — reproducibility and quality targets.
-# Everything here runs offline (no Datadog credentials). Thin wrappers over the scripts and the
+# slacheck: reproducibility and quality targets.
+# No Datadog credentials required. Thin wrappers over the scripts and the
 # CLI so the paper's numbers, figures, and checks are one command each. See docs/paper_mapping.md.
 
 PY ?= python
 
-.PHONY: help check test lint types eval figures reproduce paper clean-paper
+.PHONY: help check test lint types eval bench bench-tools docs showcase figures reproduce paper clean-paper
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -23,6 +23,18 @@ types:  ## mypy type-check
 
 eval:  ## Print Table I (tab:eval) as LaTeX, regenerated from the code
 	$(PY) -m slacheck.cli eval --both --latex
+
+bench:  ## Compare topology checks and any installed reference tools
+	$(PY) -m scripts.bench
+
+bench-tools:  ## Download and verify pinned reference binaries for Linux x86-64
+	$(PY) -m scripts.bench_tools
+
+docs:  ## Build the documentation with link checks
+	$(PY) -m mkdocs build --strict
+
+showcase:  ## Rebuild showcase media and results
+	bash showcase/make_showcase.sh
 
 reproduce:  ## Reproduce every paper number + figure offline (datasets -> tables -> figures)
 	$(PY) scripts/reproduce_paper.py

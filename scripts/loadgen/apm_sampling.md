@@ -23,7 +23,7 @@ for d in $(kubectl get deploy -n tt-slacheck -o name | grep -v with-jaeger | gre
 done
 ```
 
-Note: this restarts the pods. Do it in small batches — a simultaneous restart of all ~38
+Note: this restarts the pods. Do it in small batches: a simultaneous restart of all ~38
 deployments can saturate the container runtime on the shared cluster.
 
 ## 2. Agent-side ingestion (if traces are dropped at the Datadog agent)

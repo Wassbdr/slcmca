@@ -2,10 +2,10 @@
 
 Extends the single train-ticket case study to a second real system whose call graph is extracted
 from an AUTHORITATIVE source (no edges are guessed):
-  - train-ticket    (38 services) — documented static call graph, with the real per-service trace
+  - train-ticket    (38 services): documented static call graph, with the real per-service trace
     metrics in fixtures/datadog/. This is the PRIMARY evidence: v2's weighted decomposition targets
     the high-centrality hubs (ts-order/station/train) that v1's single critical path never visits.
-  - Online Boutique (10 services) — *_SERVICE_ADDR from the official GCP k8s manifest. We have no
+  - Online Boutique (10 services): *_SERVICE_ADDR from the official GCP k8s manifest. We have no
     per-service trace metrics for it, so it serves as STRUCTURAL evidence only: with a uniform
     nominal Sub-SLO it shows v2 aggregates the whole DAG below the target and verifies every
     service against its weighted threshold, whereas v1 reduces the graph to one critical path and
@@ -125,14 +125,14 @@ def main() -> None:
     ob1, ob2 = _ob("v1"), _ob("v2")
 
     print("=== Real-world systems (Global-SLO 99.9% availability) ===\n")
-    print("train-ticket (38 services, REAL trace metrics) — primary evidence:")
+    print("train-ticket (38 services, REAL trace metrics): primary evidence:")
     print(f"  v1: envelope {tt1.verdict.envelope.availability_pct:.2f}%, {_faults(tt1)} faults, "
           f"critical path = {_path_len(tt1)} services")
     print(f"  v2: envelope {tt2.verdict.envelope.availability_pct:.2f}%, {_faults(tt2)} faults, "
           f"full DAG = {_path_len(tt2)} services")
     print("  → v2 targets high-centrality hubs off v1's critical path (see case_study.py)\n")
 
-    print("Online Boutique (10 services, nominal Sub-SLO) — structural coverage:")
+    print("Online Boutique (10 services, nominal Sub-SLO): structural coverage:")
     print(f"  v1: envelope {ob1.verdict.envelope.availability_pct:.2f}%, {_faults(ob1)} faults, "
           f"critical path = {_path_len(ob1)} services")
     print(f"  v2: envelope {ob2.verdict.envelope.availability_pct:.2f}%, {_faults(ob2)} faults, "

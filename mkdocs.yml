@@ -1,0 +1,15 @@
+site_name: slacheck
+repo_url: https://github.com/Wassbdr/slcmca
+edit_uri: edit/showcase/2026-11/docs/
+theme:
+  name: mkdocs
+nav:
+  - Home: index.md
+  - Use your own data: tutorial.md
+  - Worked examples: examples.md
+  - Architecture: architecture.md
+exclude_docs: |
+  datadog_api_catalog.md
+  demo.md
+  live_unblock.md
+  paper_mapping.md

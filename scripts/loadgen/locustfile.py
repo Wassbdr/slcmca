@@ -8,7 +8,7 @@ fill in, then re-`slacheck record` / `publish`.
 Only exercises endpoints that actually respond on the shared cluster (login, stations, trains);
 the heavy travel/booking endpoints return 504 there, so we skip them to keep RPS high.
 
-Usage (from a machine with working gevent — e.g. your host, not the sandbox):
+Usage (from a machine with working gevent: e.g. your host, not the sandbox):
     kubectl port-forward -n tt-slacheck svc/ts-ui-dashboard 18080:8080 &
     # Web UI:
     locust -f scripts/loadgen/locustfile.py --host http://localhost:18080

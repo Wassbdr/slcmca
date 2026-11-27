@@ -6,12 +6,12 @@ uniform-decomposition / critical-path baseline (v1) compares to the full typed-D
 
 This is the empirical counterpart to the constructed dataset in scripts/gen_eval.py: the numbers
 come from a real topology, not injected faults. It is the source of truth for the paper's
-"Real-World Case Study" section — run it and paste the emitted LaTeX table.
+"Real-World Case Study" section: run it and paste the emitted LaTeX table.
 
 IMPORTANT honesty note (must stay in the paper too): the two v1-vs-v2 gaps come from DIFFERENT
 mechanisms. On the synthetic dataset, v1 misses faults because of uniform-vs-weighted
 *decomposition*. On train-ticket, v1 misses faults because critical-path *reduction* collapses
-the 38-node DAG to one series chain, hiding services that sit off that chain — which full-DAG
+the 38-node DAG to one series chain, hiding services that sit off that chain: which full-DAG
 aggregation (v2) sees. The case study evidences the topology-coverage contribution.
 
 Reproduce offline (no credentials):
@@ -35,8 +35,8 @@ PRICING = REPO / "fixtures" / "scenarios" / "pricing.example.yaml"
 ENTRYPOINT = "ts-ui-dashboard"
 
 # Architect Global-SLOs chosen to expose the topology-coverage gap on a real system.
-AVAIL_TARGET = 99.9  # % — demanding but realistic for a booking system
-LATENCY_TARGET = 30.0  # ms — exposes v1's critical-path false-negative
+AVAIL_TARGET = 99.9  # %: demanding but realistic for a booking system
+LATENCY_TARGET = 30.0  # ms: exposes v1's critical-path false-negative
 
 
 def _run(

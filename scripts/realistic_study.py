@@ -1,13 +1,13 @@
 """Statistical v1-vs-v2 validation on the realistic population (paper §V-C).
 
-Runs the realistic dataset (scripts/gen_realistic_eval.py — topologies drawn from Alibaba-like
+Runs the realistic dataset (scripts/gen_realistic_eval.py: topologies drawn from Alibaba-like
 distributions) through both engines and reports, over the whole population:
   - v1 (uniform decomposition) detection rate,
   - v2 (structurally-weighted decomposition) detection rate,
   - a Wilson 95% confidence interval on each rate.
 
 Every scenario injects a Sub-SLO fault on a low-centrality service whose actual cost sits between
-the uniform and weighted thresholds — the regime that discriminates the two methods. The headline
+the uniform and weighted thresholds: the regime that discriminates the two methods. The headline
 is the v2 rate vs the v1 rate on a realistic population, not on a few chosen cases.
 
 Reproduce offline (no credentials):
@@ -53,9 +53,9 @@ def main() -> None:
     print(f"=== Realistic population: {inj} Sub-SLO scenarios "
           "(Alibaba-like topologies, fixed seed) ===\n")
     print(f"  v1 (uniform decomposition):  {d1}/{inj} = {100*d1/inj:.1f}%  "
-          f"[95% CI {100*lo1:.1f}–{100*hi1:.1f}%]")
+          f"[95% CI {100*lo1:.1f}-{100*hi1:.1f}%]")
     print(f"  v2 (weighted decomposition): {d2}/{inj} = {100*d2/inj:.1f}%  "
-          f"[95% CI {100*lo2:.1f}–{100*hi2:.1f}%]")
+          f"[95% CI {100*lo2:.1f}-{100*hi2:.1f}%]")
     print(f"  v2 advantage: +{d2 - d1} scenarios "
           f"({100*(d2 - d1)/inj:.1f} pp of the population)\n")
 

@@ -10,7 +10,7 @@
 # 6-10 min EACH and `kubectl rollout status` often declares a false FAIL just before the pod turns
 # Ready. So we DO NOT block on readiness and DO NOT roll back: we apply the patch (idempotent, safe)
 # and move on after a short pacing delay so we never restart too many pods at once. The patch is what
-# matters; the pod becomes Ready on its own schedule. Datastores (mongo/redis/rabbitmq) are skipped —
+# matters; the pod becomes Ready on its own schedule. Datastores (mongo/redis/rabbitmq) are skipped :
 # they run no servlet, so tracing them is pointless and they use different readiness ports.
 #
 # Verify afterwards with:  scripts/loadgen/check_tracing.sh   (or query trace.servlet.request.hits)
@@ -25,10 +25,10 @@ NS="${NAMESPACE:-tt-slacheck}"
 DD_JAR="/opt/datadog/apm/library/java/dd-java-agent.jar"
 JMX="-javaagent:/jmxagent/jmx.jar=9404:/jmxagent/config.yaml"
 NEW_JTO="-javaagent:${DD_JAR} ${JMX}"
-PACE="${PACE:-25}"          # seconds between patches — throttle so restarts don't pile up
+PACE="${PACE:-25}"          # seconds between patches: throttle so restarts don't pile up
 MAX_INFLIGHT="${MAX_INFLIGHT:-6}"   # pause if more than this many ts-* pods are NotReady
 
-# Datastores and infra that run no servlet — skip (no traces to gain, different readiness ports).
+# Datastores and infra that run no servlet: skip (no traces to gain, different readiness ports).
 SKIP_RE='mongo|mysql|redis|rabbitmq|nacos|zipkin|jaeger|ui-dashboard'
 
 if [ "$#" -gt 0 ]; then
@@ -59,7 +59,7 @@ for svc in $SERVICES; do
 
   # backpressure: don't let too many pods restart at once
   while [ "$(notready_count)" -gt "$MAX_INFLIGHT" ]; do
-    echo "  $(notready_count) pods NotReady (> $MAX_INFLIGHT) — pausing 30s for the cluster to catch up"
+    echo "  $(notready_count) pods NotReady (> $MAX_INFLIGHT): pausing 30s for the cluster to catch up"
     sleep 30
   done
 

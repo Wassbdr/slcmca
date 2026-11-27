@@ -2,6 +2,8 @@
 
 Commands:
   analyze   run the pipeline and print envelope + faults (fixture or live)
+  check     check a self-contained topology YAML against a target SLO (v1 and/or v2)
+  eval      reproduce the fault-detection table (v1 vs v2) on the injected-fault dataset
   publish   build the dashboard and push it to Datadog (live, needs dashboards_write)
   record    capture live API responses into fixtures/datadog/ (live, needs keys)
   catalog   point to the Datadog API catalog doc
@@ -10,19 +12,33 @@ Commands:
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 import yaml
 
-from slacheck.config import Settings
-from slacheck.datadog.source import get_source
-from slacheck.models import SloValues
-from slacheck.pipeline import AnalysisResult, analyze
+from slacheck.availability import (
+    AvailabilityCheck,
+    ServiceImprovement,
+    check_availability,
+    suggest_improvements,
+)
+from slacheck.check_input import load_check_input
+from slacheck.check_output import Finding, OutputFormat, sarif_report
+from slacheck.graph.trace_import import TraceSource
+from slacheck.openslo import load_openslo_target
 
-app = typer.Typer(add_completion=False, help="Achievable SLA envelope from Datadog topology.")
+if TYPE_CHECKING:
+    from slacheck.models import SloValues, Verdict
+    from slacheck.pipeline import AnalysisResult
+
+app = typer.Typer(add_completion=False, help="Check service-level commitments.")
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
+_REPO_EVAL = _REPO_ROOT / "fixtures" / "eval"
+_EVAL_DATASET = _REPO_EVAL if _REPO_EVAL.is_dir() else Path(__file__).parent / "eval_fixtures"
 
 
 def _apply_cost_overrides(result: AnalysisResult, path_file: Path | None) -> None:
@@ -46,6 +62,8 @@ def _build_target(
 ) -> SloValues | None:
     if max_latency_ms is None and min_availability_pct is None and max_cost_eur_h is None:
         return None
+    from slacheck.models import SloValues
+
     return SloValues(
         response_time_ms=max_latency_ms,
         availability_pct=min_availability_pct,
@@ -53,13 +71,12 @@ def _build_target(
     )
 
 
-def _render(result: AnalysisResult) -> None:
-    v = result.verdict
+def _render(v: Verdict, entrypoint: str, constraint: str, paper_version: str) -> None:
     env = v.envelope
-    typer.echo(f"\nEntrypoint : {result.entrypoint}")
-    typer.echo(f"Constraint : {result.constraint}")
-    typer.echo(f"Paper version : {result.paper_version}")
-    label = "Topological order" if result.paper_version == "v2" else "Critical path"
+    typer.echo(f"\nEntrypoint : {entrypoint}")
+    typer.echo(f"Constraint : {constraint}")
+    typer.echo(f"Paper version : {paper_version}")
+    label = "Topological order" if paper_version == "v2" else "Critical path"
     typer.echo(f"{label} : {' -> '.join(env.path)}")
     typer.echo("\nAchievable envelope (A*):")
     typer.echo(f"  latency      : {env.response_time_ms!r} ms")
@@ -82,7 +99,7 @@ def _render(result: AnalysisResult) -> None:
         for f in v.faults:
             typer.secho(f"  [{f.direction}/{f.metric}] {f.message}", fg=typer.colors.RED)
     else:
-        typer.secho("\nNo over-commitment faults. ✅", fg=typer.colors.GREEN)
+        typer.secho("\nNo over-commitment faults.", fg=typer.colors.GREEN)
 
     if v.notes:
         typer.echo("\nNotes:")
@@ -110,6 +127,9 @@ def analyze_cmd(
     knowledge_base: Path | None = typer.Option(None, help="YAML knowledge base / margins (v2)."),
 ) -> None:
     """Run the pipeline and print the envelope and any faults."""
+    from slacheck.datadog.source import get_source
+    from slacheck.pipeline import analyze
+
     src = get_source(source, topology=topology, metrics_from=metrics_from)  # type: ignore[arg-type]
     target = _build_target(max_latency_ms, min_availability_pct, max_cost_eur_h)
     svc_filter: dict | None = None
@@ -141,7 +161,7 @@ def analyze_cmd(
         from slacheck.envelope.faults import evaluate
 
         result.verdict = evaluate(result.path, target)
-    _render(result)
+    _render(result.verdict, result.entrypoint, result.constraint, result.paper_version)
 
 
 @app.command()
@@ -161,6 +181,8 @@ def publish(
 ) -> None:
     """Build the verdict dashboard and push it to Datadog."""
     from slacheck.dashboard.builder import build_dashboard
+    from slacheck.datadog.source import get_source
+    from slacheck.pipeline import analyze
 
     src = get_source(source)  # type: ignore[arg-type]
     target = _build_target(max_latency_ms, min_availability_pct, None)
@@ -186,6 +208,7 @@ def publish(
         typer.echo(json.dumps(dashboard, indent=2))
         return
 
+    from slacheck.config import Settings
     from slacheck.dashboard.publisher import publish as do_publish
 
     url = do_publish(dashboard, Settings())
@@ -198,6 +221,8 @@ def record(
 ) -> None:
     """Capture live Datadog responses into fixtures/. Resilient: records what it can,
     reports which endpoints are denied (so you know exactly which scopes to request)."""
+    from slacheck.datadog.source import get_source
+
     src = get_source("live")
     out.mkdir(parents=True, exist_ok=True)
     captures = {
@@ -211,7 +236,7 @@ def record(
     for name, fetch in captures.items():
         try:
             payload = fetch()
-        except Exception as exc:  # noqa: BLE001 — record-what-you-can, report the rest
+        except Exception as exc:  # noqa: BLE001
             failed += 1
             reason = str(exc).splitlines()[0]
             typer.secho(f"SKIP {name}: {type(exc).__name__}: {reason}", fg=typer.colors.YELLOW)
@@ -223,7 +248,7 @@ def record(
     typer.echo(f"\nCaptured {ok}/{ok + failed} endpoints.")
     if failed:
         typer.secho(
-            "Some endpoints were denied — grant the app key the scopes in "
+            "Some endpoints were denied: grant the app key the scopes in "
             "docs/datadog_api_catalog.md ('Access checklist') and re-run.",
             fg=typer.colors.YELLOW,
         )
@@ -232,6 +257,8 @@ def record(
 @app.command()
 def doctor() -> None:
     """Check that .env credentials + site are accepted by Datadog (no key is printed)."""
+    from slacheck.config import Settings
+
     settings = Settings()
     api_state = "set" if settings.api_key else "MISSING"
     app_state = "set" if settings.app_key else "MISSING"
@@ -252,7 +279,7 @@ def doctor() -> None:
 
     try:
         ok = LiveClient(settings).validate()
-    except Exception as exc:  # noqa: BLE001 — surface the API error to the user
+    except Exception as exc:  # noqa: BLE001
         typer.secho(f"Validation call failed: {exc}", fg=typer.colors.RED)
         typer.secho(
             "If this is a 403, confirm DD_SITE (EU vs US) and the app key scopes.",
@@ -261,21 +288,28 @@ def doctor() -> None:
         raise typer.Exit(code=1) from exc
 
     if ok:
-        typer.secho("Credentials valid for this site. ✅", fg=typer.colors.GREEN)
+        typer.secho("Credentials valid for this site.", fg=typer.colors.GREEN)
     else:
-        typer.secho("API key rejected for this site — check DD_SITE.", fg=typer.colors.RED)
+        typer.secho("API key rejected for this site: check DD_SITE.", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
 
 @app.command(name="eval")
 def eval_cmd(
-    dataset: Path = typer.Option(_REPO_ROOT / "fixtures" / "eval", help="Eval dataset dir."),
+    dataset: Path = typer.Option(_EVAL_DATASET, help="Eval dataset dir."),
     paper_version: str = typer.Option("v2", "--paper-version", help="v1 | v2"),
     both: bool = typer.Option(False, help="Show v1 and v2 side by side."),
     latex: bool = typer.Option(False, help="Emit a paper-ready LaTeX table (v1 vs v2)."),
 ) -> None:
     """Reproduce the paper's fault-detection Table I for v1 and/or v2."""
     from slacheck.eval.runner import format_latex, format_table, run_eval
+
+    if not any(dataset.glob("*/*.yaml")):
+        typer.secho(
+            f"No scenarios under {dataset}. Pass --dataset DIR (one sub-directory per class).",
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(code=2)
 
     if latex:
         v1, v2 = run_eval(dataset, "v1"), run_eval(dataset, "v2")
@@ -290,9 +324,224 @@ def eval_cmd(
 
 
 @app.command()
+def check(
+    topology: Path = typer.Argument(
+        ..., exists=True, dir_okay=False, help="Topology or OpenSLO YAML."
+    ),
+    slo: float | None = typer.Option(None, "--slo", help="Target availability (%), e.g. 99.9."),
+    max_latency_ms: float | None = typer.Option(None, help="Target max end-to-end latency (ms)."),
+    max_cost_eur_h: float | None = typer.Option(None, help="Target max cost (EUR/h)."),
+    method: str | None = typer.Option(
+        None, "--method", "--paper-version", help="exact (default) | v1 | v2",
+    ),
+    both: bool = typer.Option(False, help="Run v1 (baseline) and v2 (full method) in turn."),
+    independent: bool = typer.Option(
+        False, "--independent", help="Deprecated alias for --method exact."
+    ),
+    graph_file: Path | None = typer.Option(
+        None, "--graph", exists=True, dir_okay=False, help="Topology YAML for an OpenSLO input."
+    ),
+    slo_name: str | None = typer.Option(None, help="Select an SLO in an OpenSLO bundle."),
+    output_format: OutputFormat = typer.Option(OutputFormat.text, "--format", help="Report type."),
+    improvement_costs: Path | None = typer.Option(
+        None, exists=True, dir_okay=False, help="YAML mapping of service to cost per point."
+    ),
+) -> None:
+    """Check a declared topology, or an OpenSLO availability target with --graph.
+
+    By default, check availability with independent service states and no safety margins.
+    Command-line targets override targets in the input. Exits 1 when the last check finds a fault.
+    """
+    if slo_name is not None and graph_file is None:
+        raise typer.BadParameter("--slo-name requires OpenSLO YAML with --graph.")
+    if method not in (None, "exact", "v1", "v2"):
+        raise typer.BadParameter("Use --method exact, v1 or v2.")
+    if (independent and (both or method in ("v1", "v2"))) or (both and method == "exact"):
+        raise typer.BadParameter("Use --method exact or paper methods, not both.")
+    exact = not both and method in (None, "exact")
+    if improvement_costs is not None and not exact:
+        raise typer.BadParameter("--improvement-costs requires the exact method.")
+    if exact:
+        if max_latency_ms is not None or max_cost_eur_h is not None:
+            raise typer.BadParameter("The exact method checks only availability; use --method v2.")
+        try:
+            graph, goal_pct = load_check_input(graph_file or topology)
+            if graph_file is not None:
+                goal_pct = _openslo_availability(topology, slo_name, graph.entrypoint)
+            if slo is not None:
+                goal_pct = slo
+            if goal_pct is None:
+                raise ValueError("Pass --slo or set global_target.availability_pct.")
+            result = check_availability(graph, goal_pct)
+            costs = _read_improvement_costs(improvement_costs)
+            repairs = suggest_improvements(graph, result, costs)
+        except (ValueError, OSError, yaml.YAMLError) as exc:
+            raise typer.BadParameter(str(exc)) from exc
+        if output_format is OutputFormat.text:
+            _render_independent_check(result, repairs)
+        elif output_format is OutputFormat.json:
+            report = {"model": "independent", **asdict(result), "improvements": [
+                asdict(repair) for repair in repairs
+            ]}
+            _write_check_json(graph.entrypoint, result.feasible, [report])
+        else:
+            findings = [] if result.feasible else [_availability_finding(result, repairs)]
+            typer.echo(json.dumps(sarif_report(topology, findings), indent=2))
+        if not result.feasible:
+            raise typer.Exit(code=1)
+        return
+
+    from slacheck.envelope.faults import evaluate as evaluate_v1
+    from slacheck.envelope.v2.evaluate_v2 import evaluate_v2
+    from slacheck.eval.runner import load_scenario
+    from slacheck.models import SloValues
+
+    try:
+        sc = load_scenario(graph_file or topology)
+        paper_graph = sc["graph"]
+        target = sc["target"]
+        if graph_file is not None:
+            target = (target or SloValues()).model_copy(
+                update={"availability_pct": _openslo_availability(
+                    topology, slo_name, paper_graph.entrypoint,
+                )}
+            )
+    except (OSError, ValueError, TypeError, KeyError, yaml.YAMLError) as exc:
+        raise typer.BadParameter(
+            f"Could not load check input: {exc}. See examples/shop.yaml for the topology format."
+        ) from exc
+    overrides = {
+        "availability_pct": slo,
+        "response_time_ms": max_latency_ms,
+        "cost_eur_h": max_cost_eur_h,
+    }
+    overrides = {k: v for k, v in overrides.items() if v is not None}
+    if overrides:
+        target = (target or SloValues()).model_copy(update=overrides)
+
+    if target is not None and output_format is OutputFormat.text:
+        typer.echo(f"Target Global-SLO : {target.model_dump(exclude_none=True)}")
+
+    reports = []
+    findings = []
+    for ver in ["v1", "v2"] if both else [method or "v2"]:
+        if ver == "v1":
+            path = [paper_graph.components[n] for n in paper_graph.topological_order()]
+            verdict = evaluate_v1(path, target)
+            if sc["strategies"]:
+                verdict.notes.append(
+                    f"v1 has no reconfiguration model: {len(sc['strategies'])} elasticity "
+                    "strategy(ies) in this file were not checked."
+                )
+        else:
+            verdict = evaluate_v2(
+                paper_graph, target, sc["kb"], sc["strategies"], sc["target_slos"]
+            )
+        if output_format is OutputFormat.text:
+            typer.secho(f"\n=== {ver} ===", bold=True)
+            _render(verdict, paper_graph.entrypoint, "availability", ver)
+        elif output_format is OutputFormat.json:
+            reports.append({"model": ver, "feasible": verdict.feasible, **verdict.model_dump()})
+        else:
+            findings.extend(
+                Finding(f"{ver}.{fault.metric}.{fault.direction}", fault.message)
+                for fault in verdict.faults
+            )
+    if output_format is OutputFormat.json:
+        _write_check_json(paper_graph.entrypoint, verdict.feasible, reports)
+    elif output_format is OutputFormat.sarif:
+        typer.echo(json.dumps(sarif_report(topology, findings), indent=2))
+    if not verdict.feasible:
+        raise typer.Exit(code=1)
+
+
+def _openslo_availability(path: Path, name: str | None, entrypoint: str) -> float:
+    goal = load_openslo_target(path, name)
+    if entrypoint != goal.service:
+        raise ValueError(f"set the topology entrypoint to {goal.service!r} (spec.service).")
+    return goal.availability_pct
+
+
+def _read_improvement_costs(path: Path | None) -> dict[str, float] | None:
+    if path is None:
+        return None
+    costs = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(costs, dict):
+        raise ValueError("use a YAML mapping of service names to costs per percentage point.")
+    return costs
+
+
+def _write_check_json(entrypoint: str, feasible: bool, reports: list[dict]) -> None:
+    typer.echo(json.dumps({
+        "schema_version": 1, "entrypoint": entrypoint, "feasible": feasible, "checks": reports,
+    }, indent=2))
+
+
+def _availability_finding(
+    result: AvailabilityCheck, repairs: list[ServiceImprovement],
+) -> Finding:
+    message = (
+        f"Target {result.target_pct:.12g}% exceeds achievable availability "
+        f"{result.achievable_pct:.12g}%."
+    )
+    if repairs:
+        first = repairs[0]
+        message += f" Top-ranked repair: improve {first.service} to {first.required_pct:.12g}%."
+    else:
+        message += " No single-service improvement can meet this target."
+    return Finding("availability.infeasible", message)
+
+
+def _render_independent_check(result: AvailabilityCheck, repairs: list[ServiceImprovement]) -> None:
+    typer.echo("Model: independent service states; declared availabilities without margins.")
+    typer.echo(f"Target: {result.target_pct:.12g}%")
+    typer.echo(f"Achievable: {result.achievable_pct:.12g}%")
+    typer.echo("Minimum availability with all other services unchanged:")
+    for name, threshold in result.thresholds_pct.items():
+        value = "not repairable alone" if threshold is None else f"{threshold:.12g}%"
+        typer.echo(f"  {name}: {value}")
+    typer.echo("Feasible" if result.feasible else "Infeasible")
+    if repairs:
+        priced = repairs[0].estimated_cost is not None
+        ranking = "estimated cost" if priced else "smallest availability increase"
+        typer.echo(f"Single-service repairs, ranked by {ranking}:")
+        for i, repair in enumerate(repairs, 1):
+            estimate = repair.estimated_cost
+            price = f"; cost {estimate:.12g}" if estimate is not None else ""
+            typer.echo(
+                f"  {i}. {repair.service}: {repair.current_pct:.12g}% -> "
+                f"{repair.required_pct:.12g}% (+{repair.increase_pp:.12g} points{price})"
+            )
+    elif not result.feasible:
+        typer.echo("No single-service improvement can meet this target.")
+
+
+@app.command("import-trace")
+def import_trace(
+    export: Path = typer.Argument(..., exists=True, dir_okay=False, help="Saved trace or metrics."),
+    source: TraceSource = typer.Option(..., "--source", help="Export format."),
+    entrypoint: str | None = typer.Option(None, help="Root service of the commitment scope."),
+) -> None:
+    """Write a topology YAML from OTLP, Jaeger, or Tempo service graph data."""
+    from slacheck.graph.trace_import import load_trace_graph
+
+    try:
+        graph = load_trace_graph(export, source, entrypoint)
+    except (OSError, ValueError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    typer.echo(yaml.safe_dump({
+        "entrypoint": graph.entrypoint,
+        "components": [
+            {"name": service, "slo": {"availability_pct": None}} for service in graph.components
+        ],
+        "edges": [edge.model_dump() for edge in graph.edges],
+    }, sort_keys=False), nl=False)
+
+
+@app.command()
 def catalog() -> None:
     """Where to read what Datadog exposes for slacheck."""
-    typer.echo("See docs/datadog_api_catalog.md — endpoints, metric→SLO conversions, and gaps.")
+    typer.echo("See docs/datadog_api_catalog.md: endpoints, metric→SLO conversions, and gaps.")
 
 
 if __name__ == "__main__":

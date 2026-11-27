@@ -1,0 +1,35 @@
+apiVersion: openslo/v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  description: Shop entrypoint
+---
+apiVersion: openslo/v1
+kind: SLO
+metadata:
+  name: shop-availability
+spec:
+  service: frontend
+  indicator:
+    metadata:
+      name: shop-requests
+    spec:
+      ratioMetric:
+        counter: true
+        bad:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: 'http_requests_total{service="frontend",code=~"5.."}'
+        total:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: 'http_requests_total{service="frontend"}'
+  timeWindow:
+    - duration: 30d
+      isRolling: true
+  budgetingMethod: Occurrences
+  objectives:
+    - target: 0.999

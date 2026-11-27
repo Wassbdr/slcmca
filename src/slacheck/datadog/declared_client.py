@@ -2,8 +2,8 @@
 
 This complements APM discovery for reproducibility: APM records only the edges exercised
 during the observation window (paper §IV, lesson L3), so the *call graph* is declared
-explicitly in YAML — appropriate for a well-documented app like train-ticket whose
-structure is static and known — while the per-service SLO/resource *metrics* are delegated
+explicitly in YAML: appropriate for a well-documented app like train-ticket whose
+structure is static and known: while the per-service SLO/resource *metrics* are delegated
 to an inner source (live or fixture). So you get real live metrics on a deterministic
 (declared) topology. Use ``--source live`` for fully automatic edge discovery.
 

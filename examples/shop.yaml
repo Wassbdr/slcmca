@@ -1,0 +1,57 @@
+# A small online shop. Edit any number below and re-check with:
+#   slacheck check examples/shop.yaml --slo 99.9
+#
+# components : one entry per service, with its measured Sub-SLO (latency ms, availability %,
+#              cost EUR/h) and, optionally, the cloud tier that sets its safety margin.
+# edges      : caller -> callee. "conjunctive" = the caller needs the callee;
+#              "disjunctive" = callees sharing a caller are redundant (any one is enough).
+# reconfig_strategies + knowledge_base : optional autoscaling rules, checked against the
+#              operational bound that keeps the SLO (here: cpu <= 80 % to keep throughput).
+
+entrypoint: frontend
+
+global_target:            # what you want to promise; --slo/--max-latency-ms override it
+  availability_pct: 99.9
+  response_time_ms: 250.0
+
+components:
+  - name: frontend
+    slo: { response_time_ms: 40.0, availability_pct: 99.995, cost_eur_h: 0.40 }
+    csp_profile: { tier: tier2, sigma: 0.0 }
+  - name: catalog
+    slo: { response_time_ms: 35.0, availability_pct: 99.99, cost_eur_h: 0.30 }
+  - name: cart
+    slo: { response_time_ms: 20.0, availability_pct: 99.99, cost_eur_h: 0.20 }
+  - name: checkout
+    slo: { response_time_ms: 60.0, availability_pct: 99.99, cost_eur_h: 0.30 }
+  - name: payment          # third-party payment provider
+    slo: { response_time_ms: 90.0, availability_pct: 99.95, cost_eur_h: 0.10 }
+    csp_profile: { tier: tier3, sigma: 0.0 }
+  - name: db-primary
+    slo: { response_time_ms: 8.0, availability_pct: 99.99, cost_eur_h: 0.60 }
+  - name: db-replica
+    slo: { response_time_ms: 9.0, availability_pct: 99.99, cost_eur_h: 0.60 }
+
+edges:
+  - { source: frontend, target: catalog, edge_type: conjunctive }
+  - { source: frontend, target: cart, edge_type: conjunctive }
+  - { source: frontend, target: checkout, edge_type: conjunctive }
+  - { source: checkout, target: payment, edge_type: conjunctive }
+  - { source: catalog, target: db-primary, edge_type: disjunctive }
+  - { source: catalog, target: db-replica, edge_type: disjunctive }
+
+knowledge_base:
+  margin_config:
+    k: 2.0
+    tier_floor: { tier1: 0.0, tier2: 0.01, tier3: 0.05, tier4: 0.2 }
+  translation_rules:
+    - { slo_metric: throughput, operational_metric: cpu_pct, operational_op: le, operational_value: 80.0 }
+
+reconfig_strategies:
+  - name: autoscale-checkout
+    component: checkout
+    states: [{ name: normal }, { name: scaled }]
+    transitions:
+      - { from_state: normal, to_state: scaled, trigger_metric: cpu_pct, trigger_op: gt, trigger_value: 70.0, action: scale_up }
+
+target_slos: [throughput]

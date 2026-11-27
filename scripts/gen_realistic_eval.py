@@ -13,13 +13,13 @@ microservices, 10B call traces) [alibaba2021trace]:
 
 Each generated topology gets one injected Sub-SLO over-commitment fault on a LOW-CENTRALITY
 service (the regime where uniform decomposition under-allocates and weighted decomposition does
-not — exactly the v1-vs-v2 discriminator). The harness scripts/realistic_study.py then reports
+not: exactly the v1-vs-v2 discriminator). The harness scripts/realistic_study.py then reports
 the fraction of the population where v2 detects the injected fault and v1 does not.
 
 Two injection modes (the actual victim cost is what makes a fault detectable):
   - "window" (default): the victim cost is placed at a fixed POSITION inside the discriminating
     window [weighted_threshold, uniform_threshold]. pos=0.5 reproduces the original dataset.
-    Sweeping pos in (0,1) traces a detection CURVE rather than a single constructed point — this
+    Sweeping pos in (0,1) traces a detection CURVE rather than a single constructed point: this
     is what scripts/sweep_study.py consumes to show the result is not a tautology.
   - "indep": the victim cost is drawn from a distribution INDEPENDENT of the two thresholds
     (a log-normal perturbation around the uniform threshold), so the fault is NOT engineered to
@@ -104,7 +104,7 @@ def _inject_sub_slo_fault(
 
     ``mode="window"``: the cost is placed at fractional position ``pos`` inside the discriminating
     window [weighted, uniform] (pos=0.5 = original dataset). ``mode="indep"``: the cost is drawn
-    from a log-normal perturbation around the uniform threshold, independent of the window — so the
+    from a log-normal perturbation around the uniform threshold, independent of the window: so the
     fault is not engineered to be v2-only. Returns the scenario dict, or None if the graph has no
     acyclic structure to decompose / no suitable victim."""
     # build an acyclic view to compute thresholds (drop back-edges by index order)

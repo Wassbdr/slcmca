@@ -1,4 +1,4 @@
-"""Paper-v2 topology-sensitive operators — exact numbers."""
+"""Paper-v2 topology-sensitive operators: exact numbers."""
 
 import pytest
 

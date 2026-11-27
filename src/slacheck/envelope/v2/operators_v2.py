@@ -3,7 +3,7 @@
 The operator applied to a metric depends on the dependency type τ(e) of the fan-in:
 - cost is τ-independent (everything provisioned incurs charges);
 - conjunctive availability degrades the error budget (= paper-v1);
-- disjunctive availability composes as a redundancy product (NEW — redundancy improves it);
+- disjunctive availability composes as a redundancy product (NEW: redundancy improves it);
 - conjunctive latency takes the worst root-to-leaf path; disjunctive takes the responding branch.
 """
 
@@ -21,7 +21,7 @@ def agg_cost_v2(values: Sequence[float]) -> float:
 def _check_availability(values: Sequence[float]) -> None:
     """Reject physically-impossible availabilities (> 100). Values < 0 are allowed because
     composition legitimately yields negative *intermediates* for an over-committed chain
-    (the error budget exceeds 100% — i.e. structurally impossible). Leaf SLO values are
+    (the error budget exceeds 100%: i.e. structurally impossible). Leaf SLO values are
     range-validated upstream at ingestion; this guards only against absurd inputs."""
     for v in values:
         if v > 100.0:
@@ -31,7 +31,7 @@ def _check_availability(values: Sequence[float]) -> None:
 def agg_availability_conjunctive(values: Sequence[float]) -> float:
     """Conjunctive: 100 − Σ(100 − vᵢ). Identical to paper-v1 error-budget composition.
 
-    May return a negative value when the composed error budget exceeds 100% — a valid
+    May return a negative value when the composed error budget exceeds 100%: a valid
     "structurally impossible" signal for a deeply over-committed chain."""
     if not values:
         raise ValueError("agg_availability_conjunctive requires at least one value")

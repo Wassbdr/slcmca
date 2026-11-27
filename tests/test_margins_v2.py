@@ -25,7 +25,7 @@ def test_gamma_zero_without_profile():
 
 def test_gamma_is_per_metric_no_unit_mixing():
     # the scalar tier_floor/sigma are AVAILABILITY margins (paper's metric). latency/cost get
-    # no margin unless their own sigma is supplied — avoids applying 0.05% as 0.05 ms / 0.05 EUR.
+    # no margin unless their own sigma is supplied: avoids applying 0.05% as 0.05 ms / 0.05 EUR.
     cfg = MarginConfig(k=2.0, tier_floor={"tier3": 0.05})
     prof = CspProfile(tier="tier3", sigma=0.0)
     assert gamma(prof, cfg, "availability") == pytest.approx(0.05)

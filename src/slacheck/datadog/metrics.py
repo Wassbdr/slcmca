@@ -77,7 +77,7 @@ def collect_with_samples(source: DatadogSource) -> dict[str, tuple[SloValues, di
             SloValues(
                 response_time_ms=latency.get(svc),
                 availability_pct=availability,
-                cost_eur_h=None,  # Datadog gap — see catalog §5
+                cost_eur_h=None,  # Datadog gap: see catalog §5
             ),
             sample,
         )
@@ -108,7 +108,7 @@ def k8s_availability_proxy(source: DatadogSource) -> dict[str, float]:
     """Per-service availability proxy from deployment readiness (paper Sub-SLO stand-in).
 
     ``availability ≈ replicas_ready / replicas_desired × 100``. This is a deployment-readiness
-    proxy available from ``kubernetes_state.*`` metrics even when APM trace metrics are not —
+    proxy available from ``kubernetes_state.*`` metrics even when APM trace metrics are not :
     NOT a true request-success or uptime SLO. Deployments scaled to 0 (no desired replicas)
     are skipped rather than reported as 0% or dividing by zero.
     """

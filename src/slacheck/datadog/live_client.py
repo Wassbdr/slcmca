@@ -22,7 +22,7 @@ from slacheck.config import Settings
 # The metric namespace is the APM "trace.<integration>.request" stat. For the Java/Spring
 # train-ticket app the integration is the servlet container, so the stat is
 # ``trace.servlet.request`` (its duration is the base metric, NOT a ``.duration`` suffix).
-# Other runtimes expose ``trace.http.request`` etc. — override DD_TRACE_STAT to switch.
+# Other runtimes expose ``trace.http.request`` etc.: override DD_TRACE_STAT to switch.
 # p99 latency is returned in SECONDS by Datadog; metrics.py converts to ms.
 _QUERIES = {
     "latency_p99": "p99:trace.servlet.request{*} by {service}",
@@ -92,7 +92,7 @@ class LiveClient:
         """
         try:
             return self._service_dependencies_apm()
-        except Exception:  # noqa: BLE001 — fall back to declared deps on any API error
+        except Exception:  # noqa: BLE001
             return self._service_dependencies_catalog()
 
     def _service_dependencies_apm(self) -> dict:
@@ -169,7 +169,7 @@ class LiveClient:
         series = self._query(_QUERIES[kind])
         if kind == "latency_p99":
             # Datadog returns trace duration in SECONDS; the model expects milliseconds
-            # (fixtures are already in ms — convert only here, at the live edge).
+            # (fixtures are already in ms: convert only here, at the live edge).
             series = {
                 "series": [
                     {

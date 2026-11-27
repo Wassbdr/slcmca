@@ -1,4 +1,4 @@
-"""Over-commitment fault detection — the paper's headline ascending fault and more."""
+"""Over-commitment fault detection: the paper's headline ascending fault and more."""
 
 import pytest
 

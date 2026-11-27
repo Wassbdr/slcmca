@@ -9,12 +9,12 @@ Produces, under figures/:
                                 centrality, critical path highlighted, off-path recovered faults
                                 circled (§V-B).
   - detection_sweep.pdf       : detection rate of both decompositions as the injected fault moves
-                                THROUGH both thresholds (§V-C honesty check) — shows the headline
+                                THROUGH both thresholds (§V-C honesty check): shows the headline
                                 gap is a genuine threshold effect, not a constructed point.
   - gamma_sensitivity.pdf     : safely-committable envelope A_commit vs the confidence factor k
                                 (§III-B), illustrating the competitiveness/protection trade-off.
 
-Every number is recomputed live from the same code paths as the tables — no value is hardcoded.
+Every number is recomputed live from the same code paths as the tables: no value is hardcoded.
 
 Reproduce offline (no credentials):
     pip install matplotlib networkx
@@ -39,7 +39,7 @@ REPO = Path(__file__).resolve().parents[1]
 FIGDIR = REPO / "figures"
 FIGDIR.mkdir(exist_ok=True)
 
-# A restrained, print-friendly palette (no reliance on colour alone — hatching/markers too).
+# A restrained, print-friendly palette (no reliance on colour alone: hatching/markers too).
 C_BASE = "#bdbdbd"   # ablated baseline
 C_FULL = "#1f4e79"   # full method
 C_PATH = "#c0392b"   # critical path / highlight

@@ -8,8 +8,6 @@ from typing import Literal
 
 from slacheck.datadog.source import K8sMetricKind
 
-_FIXTURES = Path(__file__).resolve().parents[3] / "fixtures" / "datadog"
-
 _METRIC_FILES = {
     "latency_p99": "metrics_latency_p99.json",
     "error_count": "metrics_error_rate.json",
@@ -31,7 +29,12 @@ class FixtureClient:
     """Reads recorded JSON. The whole pipeline runs on this with no credentials."""
 
     def __init__(self, fixtures_dir: Path | None = None) -> None:
-        self._dir = fixtures_dir or _FIXTURES
+        if fixtures_dir is None:
+            package = Path(__file__).resolve().parents[1]
+            fixtures_dir = package / "datadog_fixtures"
+            if not fixtures_dir.is_dir():
+                fixtures_dir = package.parents[1] / "fixtures" / "datadog"
+        self._dir = fixtures_dir
 
     def _load(self, name: str) -> dict:
         return json.loads((self._dir / name).read_text())

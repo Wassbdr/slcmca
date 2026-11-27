@@ -1,0 +1,61 @@
+{
+  "slug": "slcmca",
+  "title": "slacheck: availability commitments for distributed applications",
+  "tagline": "Check an availability objective and find the smallest single-service repair.",
+  "problem": "A service-level objective can exceed what its required dependencies deliver.",
+  "approach": "A reduced decision diagram evaluates required and alternative dependencies, counts each shared service once and solves the minimum conditional thresholds.",
+  "stack": [
+    "Python",
+    "Pydantic",
+    "Typer",
+    "OpenSLO",
+    "OpenTelemetry",
+    "GitHub Actions"
+  ],
+  "demo": {
+    "gif": "showcase/demo.gif",
+    "mp4": "showcase/demo.mp4",
+    "poster": "showcase/poster.png",
+    "kind": "live",
+    "caption": "Check an infeasible shop objective, then print its highest-ranked repair."
+  },
+  "reproduce": [
+    "python -m pip install .",
+    "slacheck check examples/shop.yaml --slo 99.94",
+    "make bench",
+    "make showcase"
+  ],
+  "results": [
+    {
+      "label": "Infeasible commitments detected",
+      "value": "34/34",
+      "command": "make bench",
+      "setup": "72 synthetic graphs, six seeds, separate held-out family, exhaustive oracle."
+    },
+    {
+      "label": "False positives",
+      "value": "0",
+      "command": "make bench",
+      "setup": "72 synthetic graphs, six seeds, separate held-out family, exhaustive oracle."
+    },
+    {
+      "label": "Conditional thresholds matched",
+      "value": "712",
+      "command": "make bench",
+      "setup": "72 synthetic graphs, six seeds, separate held-out family, exhaustive oracle."
+    },
+    {
+      "label": "Slowest 200-service CLI run",
+      "value": "282.17 ms",
+      "command": "make bench",
+      "setup": "Two graphs, seven serial runs each. CPU: Intel(R) Xeon(R) Processor (x86_64); Python 3.10.12; no GPU."
+    }
+  ],
+  "limits": [
+    "The exact calculation assumes independent failure states for distinct services.",
+    "Trace imports do not infer redundancy or local service availability.",
+    "The repair ranking changes one service at a time."
+  ],
+  "role": "Sole developer. Built during my ML research internship at Devoteam (AIOps), where it is used internally. Co-author of the accompanying research, which I presented in the ISSRE 2026 industry session.",
+  "repo": "https://github.com/Wassbdr/slcmca"
+}
