@@ -20,6 +20,7 @@ import yaml
 from slacheck.availability import check_availability
 from slacheck.config import Settings
 from slacheck.datadog.source import get_source
+from slacheck.graph.trace_import import TraceSource, load_trace_graph
 from slacheck.models import SloValues
 from slacheck.openslo import load_openslo_target
 from slacheck.pipeline import AnalysisResult, analyze
@@ -412,6 +413,26 @@ def check(
         )
     if verdict is not None and verdict.faults:
         raise typer.Exit(code=1)
+
+
+@app.command("import-trace")
+def import_trace(
+    export: Path = typer.Argument(..., exists=True, dir_okay=False, help="Saved trace or metrics."),
+    source: TraceSource = typer.Option(..., "--source", help="Export format."),
+    entrypoint: str | None = typer.Option(None, help="Root service of the commitment scope."),
+) -> None:
+    """Write a topology YAML from OTLP, Jaeger, or Tempo service graph data."""
+    try:
+        graph = load_trace_graph(export, source, entrypoint)
+    except (OSError, ValueError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    typer.echo(yaml.safe_dump({
+        "entrypoint": graph.entrypoint,
+        "components": [
+            {"name": service, "slo": {"availability_pct": None}} for service in graph.components
+        ],
+        "edges": [edge.model_dump() for edge in graph.edges],
+    }, sort_keys=False), nl=False)
 
 
 @app.command()
